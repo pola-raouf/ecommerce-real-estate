@@ -1,75 +1,33 @@
-# =====================
 # Base image
-# =====================
 FROM php:8.2-fpm
 
-# =====================
-# System dependencies + Nginx
-# =====================
+# Set working directory
+WORKDIR /var/www
+
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
-    unzip \
-    libzip-dev \
+    curl \
+    libpq-dev \
     libonig-dev \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    nginx \
-    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl gd \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    libzip-dev \
+    unzip \
+    && docker-php-ext-install pdo pdo_pgsql mbstring zip
 
-# =====================
-# Set working directory
-# =====================
-WORKDIR /var/www/html
-
-# =====================
 # Install Composer
-# =====================
-RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
-    && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
-    && php -r "unlink('composer-setup.php');"
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# =====================
-# Copy composer files & install dependencies
-# =====================
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs --no-scripts
-
-# =====================
-# Copy application
-# =====================
+# Copy project files
 COPY . .
 
-# =====================
-# Run post-install scripts
-# =====================
-RUN composer run-script post-autoload-dump
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader
 
-# =====================
-# Copy or create .env
-# =====================
-RUN if [ -f .env.example ]; then cp .env.example .env; else \
-    echo "APP_NAME=Laravel\nAPP_ENV=production\nAPP_KEY=\nAPP_DEBUG=false\nAPP_URL=https://your-app-name.onrender.com\nDB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_PORT=3306\nDB_DATABASE=laravel\nDB_USERNAME=root\nDB_PASSWORD=" > .env; fi
-
-# =====================
-# Generate APP_KEY
-# =====================
-RUN php artisan key:generate --force
-
-# =====================
 # Set permissions
-# =====================
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
-# =====================
-# Copy Nginx config
-# =====================
-COPY nginx.conf /etc/nginx/sites-available/default
+# Expose port
+EXPOSE 8000
 
-# =====================
-# Expose HTTP port and start services
-# =====================
-EXPOSE 8080
-CMD service nginx start && php-fpm
+# Run migrations and start server
+CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000
