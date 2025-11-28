@@ -135,6 +135,7 @@ Route::get('/clear-all', function() {
 });
 Route::get('/check-users-table', function () {
     if (\Illuminate\Support\Facades\Schema::hasTable('users')) {
+        $count = User::count();
         return "Users table exists";
     } else {
         return "Users table does NOT exist";
