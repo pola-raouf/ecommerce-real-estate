@@ -125,3 +125,12 @@ Route::post('/notifications/mark-as-read', function () {
 })->name('notifications.markAsRead')->middleware('auth');
 
 Route::resource('users', UserController::class)->middleware(Role::class . ':admin');
+
+Route::get('/clear-all', function() {
+    Artisan::call('config:clear');
+    Artisan::call('cache:clear');
+    Artisan::call('route:clear');
+    Artisan::call('view:clear');
+    return "All caches cleared!";
+});
+
