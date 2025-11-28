@@ -1,24 +1,53 @@
-FROM dunglas/frankenphp:php8.2
-
-WORKDIR /app
+# Stage 1: PHP + Composer
+FROM php:8.2-fpm-alpine AS base
 
 # Install system dependencies
-RUN apt-get update && \
-    apt-get install -y git unzip && \
-    docker-php-ext-install pdo_mysql
+RUN apk add --no-cache \
+    bash \
+    git \
+    unzip \
+    libpng libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    libzip-dev \
+    oniguruma-dev \
+    curl \
+    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl gd
 
-# Copy project
-COPY . /app
+# Set working directory
+WORKDIR /var/www/html
 
-# Install Composer dependencies
-RUN composer install --optimize-autoloader --no-dev
+# Copy composer files
+COPY composer.json composer.lock ./
 
-# Laravel permissions
-RUN mkdir -p storage/framework/{sessions,views,cache} \
-    && chmod -R a+rw storage bootstrap/cache
+# Install PHP dependencies
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+    && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
+    && php -r "unlink('composer-setup.php');" \
+    && composer install --no-dev --optimize-autoloader
 
-# Caddy config
-COPY ./Caddyfile /etc/caddy/Caddyfile
+# Copy app source
+COPY . .
 
+# Cache config & routes
+RUN php artisan config:cache \
+    && php artisan route:cache \
+    && php artisan view:cache
+
+# Stage 2: Caddy for serving Laravel
+FROM caddy:2.8.0-alpine
+
+# Copy Laravel app from base
+COPY --from=base /var/www/html /srv/app
+
+# Set working directory
+WORKDIR /srv/app
+
+# Copy Caddyfile
+COPY Caddyfile /etc/caddy/Caddyfile
+
+# Expose port 8080 (Render default HTTP)
 EXPOSE 8080
-CMD ["frankenphp", "run", "--config=/etc/caddy/Caddyfile"]
+
+# Start Caddy
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
