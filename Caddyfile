@@ -1,21 +1,9 @@
-:8080 {
-    root * /srv/app/public
+:8080
 
-    php_fastcgi unix//var/run/php/php-fpm.sock {
-        env PATH /usr/local/bin:/usr/bin:/bin
-        env APP_ENV production
-        env APP_DEBUG false
-        env APP_KEY base64:GGeNns5i4Cng34VnanLv8QAkBAOBCSu3tIM2jDUnPTA=
-        env APP_URL https://ecommerce-realestate.onrender.com
-    }
+root * /var/www/public
 
-    file_server
-    encode zstd gzip
-
-    log {
-        output stdout
-        format json
-    }
-
-    try_files {path} /index.php?{query}
+php_fastcgi unix//var/run/php/php8.2-fpm.sock {
+    env PATH /usr/local/bin:/usr/bin:/bin
 }
+
+file_server
