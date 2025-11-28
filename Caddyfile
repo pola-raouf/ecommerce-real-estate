@@ -1,5 +1,21 @@
 :8080 {
-    root * /app/public
-    php_fastcgi unix//run/php-fpm.sock
+    root * /srv/app/public
+
+    php_fastcgi unix//var/run/php/php-fpm.sock {
+        env PATH /usr/local/bin:/usr/bin:/bin
+        env APP_ENV production
+        env APP_DEBUG false
+        env APP_KEY YOUR_APP_KEY_HERE
+        env APP_URL https://your-render-url.onrender.com
+    }
+
     file_server
+    encode zstd gzip
+
+    log {
+        output stdout
+        format json
+    }
+
+    try_files {path} /index.php?{query}
 }
