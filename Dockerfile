@@ -1,7 +1,6 @@
 # Base image
 FROM php:8.2-fpm
 
-# Set working directory
 WORKDIR /var/www
 
 # Install system dependencies
@@ -15,21 +14,18 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
     && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
     && php -r "unlink('composer-setup.php');"
 
-# Copy composer files first for caching
-COPY composer.json composer.lock /var/www/
-
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader
-
-# Copy the rest of the application
+# **Copy all files first**
 COPY . /var/www
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
-# Expose port for Render
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader
+
+# Expose port
 EXPOSE 8080
 
-# Start Caddy server (defined in Caddyfile)
+# Start Caddy
 CMD ["caddy", "run", "--config", "/var/www/Caddyfile", "--adapter", "caddyfile"]
