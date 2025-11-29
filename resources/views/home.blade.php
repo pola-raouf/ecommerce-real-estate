@@ -78,6 +78,14 @@
         </div>
     </nav>
 
+    {{-- ================= LOGIN POPUP ================= --}}
+@if (session('login_popup'))
+<div id="login-popup" class="popup-container">
+    <div class="popup-box">
+        {{ session('login_popup') }}
+    </div>
+</div>
+@endif
     <!-- ================= HERO SECTION ================= -->
     <section class="hero-section">
         <div class="floating-shape shape-1"></div>
