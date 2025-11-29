@@ -110,11 +110,18 @@ public function submitPayment(Request $request, Property $property, $plan)
 
 public function reserve(Property $property)
 {
+    $logger = \App\Services\Logger::getInstance();
     $user = auth()->user();
 
+    try {
     if ($property->is_reserved) {
-        return back()->with('error', 'This property is already reserved.');
-    }
+            $logger->warning('Property reservation failed - already reserved', [
+                'property_id' => $property->id,
+                'user_id' => $user->id,
+            ]);
+
+            return back()->with('error', 'This property is already reserved.');
+        }
 
     $transaction = Transaction::create([
         'property_id' => $property->id,
@@ -138,7 +145,22 @@ public function reserve(Property $property)
     // Send confirmation email (optional: use queue to avoid blocking)
     \Mail::to($user->email)->send(new \App\Mail\PropertyReserved($property));
 
+        $logger->info('Property reserved successfully', [
+            'property_id' => $property->id,
+            'user_id' => $user->id,
+            'transaction_id' => $transaction->id,
+        ]);
+        
     return back()->with('success', 'Reservation successful! Please check your email.');
+    } catch (\Exception $e) {
+        $logger->error('Property reservation failed', [
+            'property_id' => $property->id,
+            'user_id' => $user->id,
+            'error' => $e->getMessage(),
+        ]);
+
+        return back()->with('error', 'Failed to reserve property. Please try again.');
+    }
 }
 
 
