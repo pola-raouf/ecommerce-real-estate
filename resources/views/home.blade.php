@@ -262,5 +262,14 @@
             observer.observe(stat);
         });
     </script>
+      <script>
+    const popup = document.getElementById('login-popup');
+    if (popup) {
+        setTimeout(() => {
+            popup.classList.add('fade-out');
+            setTimeout(() => popup.remove(), 400); // Remove after fade out
+        }, 5000); // 5 seconds
+    }
+</script>
 </body>
 </html>
