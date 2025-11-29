@@ -218,7 +218,7 @@ class PropertyController extends Controller
             $data['image'] = 'images/properties/'.$filename;
         }
 
-        $shouldResetReservation = isset($data['status']) && in_array($data['status'], ['available', 'sold'], true);
+        $shouldResetReservation = isset($data['status']) && $data['status']==='available';
 
         if (isset($data['user_id']) && auth()->user()->role !== 'admin') {
             unset($data['user_id']);
@@ -397,6 +397,9 @@ try {
         $property->reservation?->delete();
 
     // اجعل حالة العقار متاحة بعد إزالة الحجز
-    $property->update(['status' => 'available']);
+        if ($property->status !== 'sold') {
+        $property->update(['status' => 'available']);
+    }
+    //$property->update(['status' => 'available']);
     }
 }
