@@ -73,7 +73,7 @@
 
     <div class="row g-4">
         {{-- Multiple Images --}}
-        <div class="col-lg-7">
+        <div class="col-lg-7 order-1">
             <div class="property-images-card">
                 <h2><i class="bi bi-images me-2"></i>Property Images</h2>
                 <div class="property-image-grid">
@@ -105,10 +105,18 @@
                     @endif
                 </div>
             </div>
+            
+            {{-- Description - appears after images on mobile --}}
+            @if($property->description)
+            <div class="description-card mt-4 order-2 d-lg-none">
+                <h2><i class="bi bi-file-text me-2"></i>Description</h2>
+                <p>{!! nl2br(e($property->description)) !!}</p>
+            </div>
+            @endif
         </div>
 
         {{-- Payment / Info --}}
-        <div class="col-lg-5">
+        <div class="col-lg-5 order-3">
             <div class="payment-card">
                 <div class="payment-card-header">
                     <h2><i class="bi bi-credit-card me-2"></i>Payment Options</h2>
@@ -209,9 +217,9 @@
         </div>
     </div>
 
-    {{-- Description --}}
+    {{-- Description - hidden on mobile (shown above), visible on desktop --}}
     @if($property->description)
-    <div class="description-card mt-4">
+    <div class="description-card mt-4 order-4 d-none d-lg-block">
         <h2><i class="bi bi-file-text me-2"></i>Description</h2>
         <p>{!! nl2br(e($property->description)) !!}</p>
     </div>
