@@ -5,7 +5,7 @@
             <span class="modal-title">Confirm Deletion</span>
             <button id="modal-close" class="modal-close"><i class="fas fa-times"></i></button>
         </div>
-        <div class="modal-body">Are you sure you want to delete this property?</div>
+        <div class="modal-body">Are you suure you want to delete this property?</div>
         <div class="modal-actions">
             <button id="modal-cancel" class="btn btn-secondary">Cancel</button>
             <form id="delete-form" method="POST" style="display:inline;">
