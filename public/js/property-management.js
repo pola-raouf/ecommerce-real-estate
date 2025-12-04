@@ -53,7 +53,8 @@ $(document).ready(function() {
         e.preventDefault();
         const form = this;
         const formData = new FormData(form);
-
+        formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+        
         $.ajax({
             url: $(form).attr('action'),
             type: 'POST',
