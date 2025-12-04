@@ -69,7 +69,7 @@
             method="POST"
             id="loginForm"
             novalidate
-            data-email-exists="{{ route('check.email') }}"
+            data-email-exists="{{ route('email.exists') }}"
             data-csrf="{{ csrf_token() }}"
         >
             @csrf
