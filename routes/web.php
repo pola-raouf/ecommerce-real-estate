@@ -71,11 +71,10 @@ Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.
 //Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
 
 
-Route::resource('properties', PropertyController::class)->except(['edit', 'update', 'destroy']); 
-
-Route::get('/property-details', function() {
-    return view('properties.property-details');
-})->name('property-details');
+Route::middleware(['auth'])->group(function () {
+    Route::resource('properties', PropertyController::class)
+        ->except(['edit', 'update', 'destroy']); 
+});
 
 Route::get('/properties', [PropertyController::class, 'index'])->name('properties.index');
 Route::get('/properties/create', [PropertyController::class, 'create'])->name('properties.create');
@@ -100,6 +99,28 @@ Route::middleware('auth')->group(function () {
     Route::get('/property-management', [PropertyController::class, 'propertyManagement'])
     ->name('property-management')
     ->middleware(['auth', 'role:seller,admin']);
+
+
+// Property management routes
+
+
+Route::middleware(['auth',Role::class.':seller,admin'])->group(function () {
+
+    // Property management page
+    Route::get('/property-management', [PropertyController::class, 'propertyManagement'])->name('property-management');
+
+    // Store new property (AJAX or normal form)
+    Route::post('/properties', [PropertyController::class, 'store'])->name('properties.store');
+
+    // Edit property form (optional if using modal)
+    //Route::get('/properties/{property}/edit', [PropertyController::class, 'edit'])->name('properties.edit');
+
+    // Update property (AJAX or normal form)
+    Route::put('/properties/{property}', [PropertyController::class, 'update'])->name('properties.update');
+
+    // Delete property (AJAX or normal form)
+    Route::delete('/properties/{property}', [PropertyController::class, 'destroy'])->name('properties.destroy');
+});
 Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])
     ->name('password.request');
 
