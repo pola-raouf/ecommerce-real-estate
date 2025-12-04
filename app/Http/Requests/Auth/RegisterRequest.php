@@ -5,6 +5,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class RegisterRequest extends FormRequest
 {
+    //l
     public function authorize(): bool
     {
         return true; // allow everyone to register
