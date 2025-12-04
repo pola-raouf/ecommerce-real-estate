@@ -1,53 +1,56 @@
 $(document).ready(function() {
+    // ======================= Config & Elements =======================
     const pieCtx = document.getElementById('pieChart');
-    const config = window.dashboardConfig || {};
+    const $clientSelect = $('#clientSelect');
+    const $salesTableBody = $('#salesTableBody');
+    const $salesTableEmpty = $('#salesTableEmpty');
+    const clientDataUrl = window.dashboardConfig?.clientDataUrl || $clientSelect.data('endpoint') || '/dashboard/client-data';
 
+    // ======================= Helper Functions =======================
+    
+    // Normalize sales data for table rendering
     const normalizeSales = (data) => {
         if (Array.isArray(data)) return data;
         if (data && typeof data === 'object') return Object.values(data);
         return [];
     };
 
+    // Render the sales table
     const renderSalesTable = (data) => {
-        const $body = $('#salesTableBody');
-        const $empty = $('#salesTableEmpty');
-        $body.empty();
+        $salesTableBody.empty();
 
         if (!data.length) {
-            $empty.removeClass('d-none');
+            $salesTableEmpty.removeClass('d-none');
             return;
         }
 
-        $empty.addClass('d-none');
+        $salesTableEmpty.addClass('d-none');
 
         data.forEach((point, idx) => {
-            const label = point?.label ?? `Month ${idx + 1}`;
-            const listings = point?.listings ?? 0;
-            const reservations = point?.reservations ?? 0;
-
-            $body.append(`
+            $salesTableBody.append(`
                 <tr>
-                    <td>${label}</td>
-                    <td>${listings}</td>
-                    <td>${reservations}</td>
+                    <td>${point?.label || `Month ${idx + 1}`}</td>
+                    <td>${point?.listings || 0}</td>
+                    <td>${point?.reservations || 0}</td>
                 </tr>
             `);
         });
     };
 
-    let pieData = config.initialPie || {};
-    let salesDataSafe = normalizeSales(config.salesData);
-    const clientDataUrl = config.clientDataUrl || $('#clientSelect').data('endpoint') || '/dashboard/client-data';
-
+    // Extract labels from pie data
     const getPieLabels = (pie) => Object.keys(pie || {});
 
-    let pieChart = new Chart(pieCtx, {
+    // ======================= Initialize Pie Chart =======================
+    const defaultColors = ['#a3c3d6','#f4b787','#cfd6e3','#d6a3c3','#87f4b7'];
+    let pieData = window.dashboardConfig?.initialPie || {};
+    
+    const pieChart = new Chart(pieCtx, {
         type: 'doughnut',
         data: {
             labels: getPieLabels(pieData),
             datasets: [{
                 data: getPieLabels(pieData).map(l => pieData[l] || 0),
-                backgroundColor: ['#a3c3d6','#f4b787','#cfd6e3','#d6a3c3','#87f4b7'],
+                backgroundColor: defaultColors,
                 borderColor: '#fff',
                 borderWidth: 2
             }]
@@ -60,39 +63,45 @@ $(document).ready(function() {
         }
     });
 
-    renderSalesTable(salesDataSafe);
+    // Render initial sales table
+    const initialSales = normalizeSales(window.dashboardConfig?.salesData || []);
+    renderSalesTable(initialSales);
 
-    const $clientSelect = $('#clientSelect');
+    // ======================= Client Switch Handler =======================
     if ($clientSelect.length) {
         $clientSelect.change(function() {
-            if (!clientDataUrl) {
-                return;
-            }
             const clientId = $(this).val();
+            if (!clientDataUrl) return;
 
             $.ajax({
                 url: clientDataUrl,
                 method: 'GET',
                 data: { id: clientId },
                 success: function(res) {
-                    if(res.error) return alert(res.error);
+                    if (res.error) return alert(res.error);
 
-                    const newLabels = Object.keys(res.pie || {});
-                    pieChart.data.labels = newLabels;
-                    pieChart.data.datasets[0].data = newLabels.map(l => res.pie[l] || 0);
+                    // ----- Pie Chart Update -----
+                    const piePayload = res.pie || res.pieData || {};
+                    const labels = getPieLabels(piePayload);
+
+                    pieChart.data.labels = labels.length ? labels : ['No Data'];
+                    pieChart.data.datasets[0].data = labels.length ? labels.map(l => piePayload[l] || 0) : [1];
                     pieChart.update();
 
-                    const salesPayload = normalizeSales(res.sales);
-                    renderSalesTable(salesPayload);
+                    // ----- Sales Table Update -----
+                    renderSalesTable(normalizeSales(res.sales));
                 },
-                error: function(err) { console.error('AJAX error:', err); }
+                error: function(err) {
+                    console.error('AJAX error:', err);
+                }
             });
         });
     }
 
+    // ======================= Optional Randomize Button =======================
     $('#randomizeBtn').click(function() {
         const labels = pieChart.data.labels;
-        pieChart.data.datasets[0].data = labels.map(() => Math.floor(Math.random()*30)+10);
+        pieChart.data.datasets[0].data = labels.map(() => Math.floor(Math.random() * 30) + 10);
         pieChart.update();
     });
 });
