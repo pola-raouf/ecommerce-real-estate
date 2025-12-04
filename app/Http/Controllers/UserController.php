@@ -4,223 +4,218 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Property;
+use App\Services\Logger;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
-use App\Services\Logger;
+use App\Http\Requests\User\StoreUserRequest;
+use App\Http\Requests\User\UpdateUserRequest;
 
 class UserController extends Controller
 {
+    protected Logger $logger;
+
+    public function __construct()
+    {
+        $this->logger = Logger::getInstance();
+    }
+    // ------------------- CRUD Methods -------------------
+
+    /**
+     * Display a list of users.
+     */
     public function index()
     {
         try {
             $users = User::all();
             return view('users.index', compact('users'));
-        } catch (\Exception $e) {
-            return back()->with('error', 'Something went wrong: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            return $this->errorResponse('Something went wrong: ' . $e->getMessage());
         }
     }
 
+    /**
+     * Show the form for creating a new user.
+     */
     public function create()
     {
         try {
             return view('users.create');
-        } catch (\Exception $e) {
-            return back()->with('error', 'Something went wrong: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            return $this->errorResponse('Something went wrong: ' . $e->getMessage());
         }
     }
 
-    
-    public function store(Request $request)
-{
-    $logger = \App\Services\Logger::getInstance();
-    try {
-    $data = $request->validate([
-        'name' => 'required|string|max:30',
-        'email' => 'required|string|email|unique:users,email|max:60',
-        'password' => 'required|string|min:8',
-        'birth_date' => 'required|date',
-        'gender' => 'required|in:male,female,other',
-        'location' => 'required|string|max:255',
-        'phone' => 'required|numeric|digits_between:10,11',
-        'role' => 'required|string|in:admin,seller,buyer'
-    ]);
-      
-    $secretKey = env('PASSWORD_HMAC_KEY');
-    $hmacHash = hash_hmac('sha256', $request->password, $secretKey);
-    $bcryptHash = Hash::make($hmacHash);
+    /**
+     * Store a newly created user in storage.
+     */
+    public function store(StoreUserRequest $request)
+    {
+        try {
+            $data = $request->validated();
+            $user = $this->createUser($data);
 
-    $user = User::create([
-        'name' => $data['name'],
-            'email'=> $data['email'],
-            'password'=> $bcryptHash,
-            'birth_date'=> $data['birth_date'],
-            'gender'=> $data['gender'],
-            'location'=> $data['location'],
-            'phone'=> $data['phone'],
-            'role'=> $data['role'],
-    ]);
-        $logger->info('New user created successfully', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-        ]);
+            $this->logger->info('New user created', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'created_by' => auth()->id(),
+            ]);
 
-    if ($request->ajax()) {
-        return response()->json(['success' => true, 'user' => $user]);
-    }
+            return $this->successResponse('User created successfully', $user);
 
-    return back()->with('success', 'User created successfully');
-    } catch (\Exception $e) {
-        $logger->error('User creation failed', [
-            'email' => $request->email,
-            'error' => $e->getMessage(),
-        ]);
-
-        if ($request->ajax()) {
-            return response()->json(['error' => 'User creation failed'], 500);
+        } catch (\Throwable $e) {
+            $this->logger->error('User creation failed', [
+                'email' => $request->email,
+                'error' => $e->getMessage(),
+            ]);
+            return $this->errorResponse('Failed to create user. Please try again.');
         }
-
-        return back()->with('error', 'Failed to create user. Please try again.');
     }
-}
 
+    /**
+     * Search for users.
+     */
+    public function search(Request $request)
+    {
+        $query = $request->input('query');
 
-    // UserController.php
-public function search(Request $request)
-{
-    $logger = Logger::getInstance();
-    $query = $request->input('search');
-    try {
-        $logger->info('User search performed', [
+        $users = User::where('name', 'like', "%{$query}%")
+            ->orWhere('email', 'like', "%{$query}%")
+            ->orWhere('phone', 'like', "%{$query}%")
+            ->get();
+
+        $this->logger->info('User search performed', [
             'user_id' => auth()->id(),
             'search_query' => $query,
         ]);
-    } catch (\Exception $e) {
-        $logger->error('Logging failed on user search', [
-            'user_id' => auth()->id(),
-            'error' => $e->getMessage(),
-        ]);
+
+        return $request->ajax()
+            ? response()->json($users)
+            : view('users-management', ['users' => $users]);
     }
 
-    $users = User::where('name', 'like', "%{$query}%")
-                ->orWhere('email', 'like', "%{$query}%")
-                ->orWhere('phone', 'like', "%{$query}%")
-                ->get();
+    /**
+     * Update the specified user in storage.
+     */
+    public function update(UpdateUserRequest $request, User $user)
+    {
+        try {
+            $data = $request->validated();
 
-    // Return JSON if AJAX
-    if ($request->ajax()) {
-        return response()->json($users);
-    }
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($this->hmacPassword($data['password']));
+            } else {
+                unset($data['password']);
+            }
 
-    // Otherwise, just return the same view with filtered users
-    return view('users-management', ['users' => $users]);
-}
+            $user->update($data);
 
+            $this->logger->info('User updated', [
+                'user_id' => $user->id,
+                'updated_by' => auth()->id(),
+            ]);
 
+            return $this->successResponse('User updated successfully', $user);
 
-    
-
-    public function update(Request $request, User $user)
-{
-    $logger = Logger::getInstance();
-    try {
-        $data = $request->validate([
-            'name' => 'required|string|max:30',
-                'email' => 'required|string|email|unique:users,email,' . $user->id . '|max:60',
-                'password' => 'nullable|string|min:8',
-                'birth_date' => 'required|date',
-            'gender' => 'required|in:male,female,other',
-                'location' => 'required|string|max:255',
-                'phone' => 'required|numeric|digits_between:10,11',
-            'role' => 'required|string|in:admin,seller,buyer',
-        ]);
-
-        if (!empty($data['password'])) {
-            $secretKey = env('PASSWORD_HMAC_KEY');
-            $hmacHash = hash_hmac('sha256', $data['password'], $secretKey);
-            $bcryptHash = Hash::make($hmacHash);
-    $data['password'] = $bcryptHash;
-        } else {
-            unset($data['password']);
+        } catch (\Throwable $e) {
+            $this->logger->error('User update failed', [
+                'user_id' => $user->id,
+                'updated_by' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
+            return $this->errorResponse('Failed to update user.');
         }
-
-        $user->update($data);
-
-        $logger->info('User updated successfully', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'updated_by' => auth()->id(),
-        ]);
-
-        // Return JSON for AJAX
-        return response()->json(['success' => true, 'user' => $user]);
-
-    } catch (\Exception $e) {
-        $logger->error('User update failed', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'updated_by' => auth()->id(),
-            'error' => $e->getMessage(),
-        ]);
-
-        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
-}
 
-
-
+    /**
+     * Remove the specified user from storage.
+     */
     public function destroy(User $user)
-{
-    $logger = Logger::getInstance();
-    try {
-        $user->delete();
-        
-        $logger->info('User deleted successfully', [
-            'user_id' => $user->id,
-            'deleted_by' => auth()->id(),
-        ]);
+    {
+        try {
+            $user->delete();
 
-        if(request()->ajax()) {
-            return response()->json(['success' => true]);
+            $this->logger->info('User deleted', [
+                'user_id' => $user->id,
+                'deleted_by' => auth()->id(),
+            ]);
+
+            return $this->successResponse('User deleted successfully');
+
+        } catch (\Throwable $e) {
+            $this->logger->error('User deletion failed', [
+                'user_id' => $user->id,
+                'deleted_by' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->errorResponse('Failed to delete user.');
         }
-        return redirect()->route('users.index')->with('success', 'User deleted successfully');
-    } catch (\Exception $e) {
-        $logger->error('User deletion failed', [
-            'user_id' => $user->id,
-            'deleted_by' => auth()->id(),
-            'error' => $e->getMessage(),
-        ]);
-
-        if(request()->ajax()) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-
-        return back()->with('error', 'Something went wrong: ' . $e->getMessage());
     }
-}
 
+    /**
+     * Display the users management page.
+     */
     public function usersManagement()
     {
-        $logger = \App\Services\Logger::getInstance();
         try {
-        $users = User::all();
-        $properties = Property::all();
-            
-            $logger->info('Accessed users management page', [
-            'accessed_by' => auth()->id(),
-            'users_count' => $users->count(),
-            'properties_count' => $properties->count(),
-        ]);
-            
-        return view('users.users-management', compact('users', 'properties'));
-            
-        } catch (\Exception $e) {
-        $logger->error('Failed to load users management page', [
-            'accessed_by' => auth()->id(),
-            'error' => $e->getMessage(),
-        ]);
-            
-        return back()->with('error', 'Unable to load users management page.');
-    }
+            $users = User::all();
+            $properties = Property::all();
+
+            $this->logger->info('Accessed users management page', [
+                'accessed_by' => auth()->id(),
+                'users_count' => $users->count(),
+                'properties_count' => $properties->count(),
+            ]);
+
+            return view('users.users-management', compact('users', 'properties'));
+
+        } catch (\Throwable $e) {
+            $this->logger->error('Failed to load users management page', [
+                'accessed_by' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->errorResponse('Unable to load users management page.');
+        }
     }
 
+    // ------------------- Helper Methods -------------------
+
+    /**
+     * HMAC a password before storing.
+     */
+    private function hmacPassword(string $password): string
+    {
+        $secretKey = env('PASSWORD_HMAC_KEY');
+        return hash_hmac('sha256', $password, $secretKey);
+    }
+
+    /**
+     * Create a new user with hashed password.
+     */
+    private function createUser(array $data): User
+    {
+        $data['password'] = Hash::make($this->hmacPassword($data['password']));
+        return User::create($data);
+    }
+
+    /**
+     * Return success response for AJAX or normal requests.
+     */
+    private function successResponse(string $message, $data = null)
+    {
+        return request()->ajax()
+            ? response()->json(['success' => true, 'data' => $data])
+            : back()->with('success', $message);
+    }
+
+    /**
+     * Return error response for AJAX or normal requests.
+     */
+    private function errorResponse(string $message, int $code = 500)
+    {
+        return request()->ajax()
+            ? response()->json(['success' => false, 'message' => $message], $code)
+            : back()->with('error', $message);
+    }
 }
