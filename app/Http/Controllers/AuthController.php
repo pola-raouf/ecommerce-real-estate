@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends Controller
 {
     protected Logger $logger;
-//
+//l
     public function __construct()
     {
         $this->logger = Logger::getInstance();
