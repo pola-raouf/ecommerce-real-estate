@@ -83,7 +83,7 @@ $(document).ready(function () {
         $.ajax({
             url: url,
             type: "GET",
-            data: { query: query },
+            data: { search: query },
             success: function (users) {
                 let tbody = "";
                 if (!Array.isArray(users) || users.length === 0) {
