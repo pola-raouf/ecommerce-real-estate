@@ -1,62 +1,61 @@
 $(document).ready(function() {
 
-    // ---------------- Toast Notifications ----------------
+    // =================== Toast Function ===================
     function showToast(message, type = 'error') {
-        const toastContainer = $('#toast-container');
-        if (!toastContainer.length) return;
+        const container = $('#toast-container');
+        if (!container.length) return;
 
-        let iconClass = 'fa-exclamation-circle';
-        if (type === 'success') iconClass = 'fa-check-circle';
-        else if (type === 'warning') iconClass = 'fa-exclamation-triangle';
-        else if (type === 'info') iconClass = 'fa-info-circle';
+        const icons = {
+            success: 'fa-check-circle',
+            error: 'fa-exclamation-circle',
+            warning: 'fa-exclamation-triangle',
+            info: 'fa-info-circle'
+        };
 
-        const toast = $(`<div class="toast ${type}">
-            <i class="fas ${iconClass} toast-icon"></i>
-            <span class="toast-message">${message}</span>
-            <button class="toast-close"><i class="fas fa-times"></i></button>
-        </div>`);
+        const toast = $(`
+            <div class="toast ${type}">
+                <i class="fas ${icons[type] || 'fa-exclamation-circle'} toast-icon"></i>
+                <span class="toast-message">${message}</span>
+                <button class="toast-close"><i class="fas fa-times"></i></button>
+            </div>
+        `);
 
-        toastContainer.append(toast);
+        container.append(toast);
         toast.find('.toast-close').click(() => toast.remove());
         setTimeout(() => toast.fadeOut(300, () => toast.remove()), 5000);
     }
 
     window.pmShowToast = showToast;
 
+    // =================== Multi-file Inputs ===================
     const createMultiInput = () => $('<input type="file" class="form-control mb-2" name="multiple_images[]" accept="image/*">');
 
-    $('#add-multi-image-btn').on('click', function(e) {
+    $('#add-multi-image-btn').click(e => {
         e.preventDefault();
-        const wrapper = $('#multi-images-wrapper');
-        if (wrapper.length) {
-            wrapper.append(createMultiInput());
-        }
+        $('#multi-images-wrapper').append(createMultiInput());
     });
 
-    $('#edit-add-multi-image-btn').on('click', function(e) {
+    $('#edit-add-multi-image-btn').click(e => {
         e.preventDefault();
-        const wrapper = $('#edit-multi-images-wrapper');
-        if (wrapper.length) {
-            wrapper.append(createMultiInput());
-        }
+        $('#edit-multi-images-wrapper').append(createMultiInput());
     });
 
-    // ---------------- Client-side Search ----------------
+    // =================== Client-side Table Search ===================
     $('.search-bar input').on('keyup', function() {
-        let query = $(this).val().toLowerCase();
+        const query = $(this).val().toLowerCase();
         $('#properties-list tbody tr').each(function() {
-            let rowText = $(this).text().toLowerCase();
-            $(this).toggle(rowText.indexOf(query) > -1);
+            $(this).toggle($(this).text().toLowerCase().includes(query));
         });
     });
 
-    // ---------------- Add Property ----------------
+    // =================== Add Property AJAX ===================
     $('#add-property-form').submit(function(e){
         e.preventDefault();
-        const formData = new FormData(this);
+        const form = this;
+        const formData = new FormData(form);
 
         $.ajax({
-            url: $(this).attr('action'),
+            url: $(form).attr('action'),
             type: 'POST',
             data: formData,
             contentType: false,
@@ -78,7 +77,7 @@ $(document).ready(function() {
                     </td>
                 </tr>`;
                 $('#properties-list tbody').prepend(newRow);
-                $('#add-property-form')[0].reset();
+                form.reset(); // reset form after success
             },
             error: function(xhr){
                 showToast('Error adding property: ' + (xhr.responseJSON?.message || 'Unknown error'), 'error');
@@ -86,8 +85,20 @@ $(document).ready(function() {
         });
     });
 
-    // ---------------- File Input Display ----------------
-    $('#property-image').on('change', function() {
-        console.log(this.files); // optional debug
+    // =================== Future-ready: Edit & Delete Buttons (AJAX placeholders) ===================
+    // Example for dynamically added rows
+    $(document).on('click', '.edit-btn', function() {
+        const id = $(this).data('id');
+        // Your existing edit-modal JS handles this
+        $('#edit-modal').modal('show');
+        // Fill modal with property data as needed
     });
+
+    $(document).on('click', '.delete-btn', function() {
+        const id = $(this).data('id');
+        // Your existing delete-modal JS handles this
+        $('#delete-modal').modal('show');
+        $('#delete-modal').data('id', id);
+    });
+
 });
