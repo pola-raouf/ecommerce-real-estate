@@ -72,8 +72,7 @@
     {{-- ================= SEARCH & FILTER FORM ================= --}}
     <div class="filter-container mb-4 p-4 shadow-lg rounded-4 bg-light">
         <form class="row g-3" method="GET" action="{{ route('properties.index') }}" data-bs-theme="light">
-
-            {{-- Buy/Rent Filter --}}
+            <!-- Transaction Type -->
             <div class="col-md-3 col-lg-2">
                 <label for="transaction_type" class="form-label">Transaction Type</label>
                 <select id="transaction_type" name="transaction_type" class="form-select">
@@ -83,13 +82,13 @@
                 </select>
             </div>
 
-            {{-- Search Term --}}
+            <!-- Search Term -->
             <div class="col-md-4 col-lg-3">
                 <label for="search_term" class="form-label">Search (Category or Location)</label>
                 <input type="text" id="search_term" name="search_term" class="form-control" value="{{ request('search_term') }}" placeholder="e.g., Apartment or Maadi">
             </div>
 
-            {{-- Category Filter --}}
+            <!-- Category -->
             <div class="col-md-4 col-lg-2">
                 <label for="category" class="form-label">Category</label>
                 <select id="category" name="category" class="form-select">
@@ -100,7 +99,7 @@
                 </select>
             </div>
 
-            {{-- Location Filter --}}
+            <!-- Location -->
             <div class="col-md-4 col-lg-2">
                 <label for="location" class="form-label">Location</label>
                 <select id="location" name="location" class="form-select">
@@ -111,19 +110,19 @@
                 </select>
             </div>
 
-            {{-- Min Price --}}
+            <!-- Min Price -->
             <div class="col-md-3 col-lg-2">
                 <label for="min_price" class="form-label">Min Price (EGP)</label>
-                <input type="number" id="min_price" name="min_price" class="form-control" value="{{ request('min_price') }}" placeholder="e.g., 500000" min="0">
+                <input type="number" id="min_price" name="min_price" class="form-control" value="{{ request('min_price') }}" min="0">
             </div>
 
-            {{-- Max Price --}}
+            <!-- Max Price -->
             <div class="col-md-3 col-lg-2">
                 <label for="max_price" class="form-label">Max Price (EGP)</label>
-                <input type="number" id="max_price" name="max_price" class="form-control" value="{{ request('max_price') }}" placeholder="e.g., 2000000" min="0">
+                <input type="number" id="max_price" name="max_price" class="form-control" value="{{ request('max_price') }}" min="0">
             </div>
 
-            {{-- Sort --}}
+            <!-- Sort -->
             <div class="col-md-3 col-lg-2">
                 <label for="sort_by" class="form-label">Sort By</label>
                 <select id="sort_by" name="sort_by" class="form-select">
@@ -133,7 +132,7 @@
                 </select>
             </div>
 
-            {{-- Buttons --}}
+            <!-- Buttons -->
             <div class="col-md-3 col-lg-1 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary w-100">Apply</button>
             </div>
@@ -146,11 +145,14 @@
     {{-- ================= PROPERTY CARDS ================= --}}
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="properties-list">
         @forelse($properties as $property)
+            @php
+                $imagePath = $property->image && file_exists(public_path($property->image))
+                    ? asset($property->image)
+                    : asset('images/properties/placeholder.jpg');
+            @endphp
             <div class="col" data-id="{{ $property->id }}">
                 <div class="card shadow-sm h-100">
-                    @if($property->image)
-                        <img src="{{ asset($property->image) }}" class="card-img-top object-fit-cover" alt="{{ $property->category }}">
-                    @endif
+                    <img src="{{ $imagePath }}" class="card-img-top object-fit-cover" alt="{{ $property->category ?? 'Property' }}">
                     <div class="card-body d-flex flex-column">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h5 class="card-title mb-0">{{ $property->category }}</h5>
@@ -174,6 +176,7 @@
             </div>
         @endforelse
     </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
