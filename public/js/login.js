@@ -126,4 +126,3 @@ togglePasswordButtons.forEach((button) => {
         }
     });
 });
-
