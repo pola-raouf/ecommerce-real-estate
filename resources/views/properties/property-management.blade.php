@@ -143,7 +143,7 @@
         </form>
     </div>
 
-    <!-- ===================== RIGHT PANEL: Properties Table ===================== -->
+    <!-- ====================.= RIGHT PANEL: Properties Table ===================== -->
     <div class="users-list-panel">
         <div class="users-list-header">
             <h2 class="panel-title mb-0">Property Lists</h2>
