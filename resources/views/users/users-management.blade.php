@@ -228,7 +228,6 @@
                 <select id="edit-gender" required>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
-                    <option value="other">Other</option>
                 </select>
 
                 <label>Location</label>
@@ -243,8 +242,8 @@
 </div>
 
 <!-- Bootstrap & Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ asset('js/users-management.js') }}"></script>
 </body>
 </html>
