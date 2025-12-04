@@ -88,7 +88,7 @@ class UserController extends Controller
 public function search(Request $request)
 {
     $logger = Logger::getInstance();
-    
+    $query = $request->input('search');
     try {
         $logger->info('User search performed', [
             'user_id' => auth()->id(),
