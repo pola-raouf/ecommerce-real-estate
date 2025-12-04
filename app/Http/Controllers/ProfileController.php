@@ -16,7 +16,7 @@ use Illuminate\View\View;
 class ProfileController extends Controller
 {
     protected Logger $logger;
-
+//l
     public function __construct()
     {
         $this->logger = Logger::getInstance();
