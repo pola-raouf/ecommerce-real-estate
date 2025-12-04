@@ -1,11 +1,24 @@
+// ------------------------------
+// LOGIN JS (cleaned, debounced)
+// ------------------------------
 const loginForm = document.getElementById('loginForm');
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const emailFeedback = document.getElementById('email-feedback');
 const passwordFeedback = document.getElementById('password-feedback');
 
+const messages = {
+    emailInvalid: 'Enter a valid email address.',
+    emailNotFound: 'We could not find an account with this email.',
+    emailValid: 'Looks good.',
+    passwordShort: 'Password must be at least 8 characters.',
+    passwordValid: 'Looks good.'
+};
+
+// Simple email regex
 const isEmailValid = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
+// Update input classes & messages
 const setFieldState = (input, isValid, messageEl, message = '') => {
     if (!input || !messageEl) return;
     input.classList.remove('is-valid', 'is-invalid');
@@ -14,9 +27,10 @@ const setFieldState = (input, isValid, messageEl, message = '') => {
     messageEl.classList.toggle('success', isValid && !!message);
 };
 
+// Fetch email existence from server
 const fetchEmailStatus = async (value) => {
     if (!loginForm) return null;
-    const url = loginForm.dataset.checkEmail;
+    const url = loginForm.dataset.emailExists;
     const token = loginForm.dataset.csrf;
     if (!url || !token) return null;
 
@@ -31,57 +45,56 @@ const fetchEmailStatus = async (value) => {
     return response.json();
 };
 
-if (loginForm && emailInput && passwordInput) {
-    emailInput.addEventListener('input', async () => {
-        const value = emailInput.value.trim();
+// ------------------------------
+// EMAIL VALIDATION (debounced)
+// ------------------------------
+if (loginForm && emailInput) {
+    let emailTimeout;
+    emailInput.addEventListener('input', () => {
+        clearTimeout(emailTimeout);
+        emailTimeout = setTimeout(async () => {
+            const value = emailInput.value.trim();
+            if (!value) return setFieldState(emailInput, false, emailFeedback, '');
+            if (!isEmailValid(value)) return setFieldState(emailInput, false, emailFeedback, messages.emailInvalid);
 
-        if (!value.length) {
-            setFieldState(emailInput, false, emailFeedback, '');
-            return;
-        }
-
-        if (!isEmailValid(value)) {
-            setFieldState(emailInput, false, emailFeedback, 'Enter a valid email address.');
-            return;
-        }
-
-        try {
-            const result = await fetchEmailStatus(value);
-            if (result?.exists) {
-                setFieldState(emailInput, true, emailFeedback, 'Looks good.');
-            } else {
-                setFieldState(emailInput, false, emailFeedback, 'We could not find an account with this email.');
+            try {
+                const result = await fetchEmailStatus(value);
+                if (result?.exists) setFieldState(emailInput, true, emailFeedback, messages.emailValid);
+                else setFieldState(emailInput, false, emailFeedback, messages.emailNotFound);
+            } catch {
+                setFieldState(emailInput, false, emailFeedback, 'Unable to verify email right now.');
             }
-        } catch (error) {
-            console.error('Email check failed', error);
-            setFieldState(emailInput, false, emailFeedback, 'Unable to verify email right now.');
-        }
+        }, 500);
     });
+}
 
+// ------------------------------
+// PASSWORD VALIDATION
+// ------------------------------
+if (passwordInput) {
     passwordInput.addEventListener('input', () => {
         const value = passwordInput.value;
-        if (!value.length) {
-            setFieldState(passwordInput, false, passwordFeedback, '');
-            return;
-        }
-        if (value.length < 8) {
-            setFieldState(passwordInput, false, passwordFeedback, 'Password must be at least 8 characters.');
-        } else {
-            setFieldState(passwordInput, true, passwordFeedback, 'Looks good.');
-        }
+        if (!value) return setFieldState(passwordInput, false, passwordFeedback, '');
+        if (value.length < 8) setFieldState(passwordInput, false, passwordFeedback, messages.passwordShort);
+        else setFieldState(passwordInput, true, passwordFeedback, messages.passwordValid);
     });
+}
 
+// ------------------------------
+// FORM SUBMIT CHECK
+// ------------------------------
+if (loginForm) {
     loginForm.addEventListener('submit', (event) => {
         let isValid = true;
         const emailValue = emailInput.value.trim();
 
         if (!isEmailValid(emailValue)) {
-            setFieldState(emailInput, false, emailFeedback, 'Enter a valid email address.');
+            setFieldState(emailInput, false, emailFeedback, messages.emailInvalid);
             isValid = false;
         }
 
         if (passwordInput.value.length < 8) {
-            setFieldState(passwordInput, false, passwordFeedback, 'Password must be at least 8 characters.');
+            setFieldState(passwordInput, false, passwordFeedback, messages.passwordShort);
             isValid = false;
         }
 
@@ -92,8 +105,10 @@ if (loginForm && emailInput && passwordInput) {
     });
 }
 
+// ------------------------------
+// PASSWORD TOGGLE
+// ------------------------------
 const togglePasswordButtons = document.querySelectorAll('[data-password-toggle]');
-
 togglePasswordButtons.forEach((button) => {
     button.addEventListener('click', () => {
         const targetId = button.dataset.passwordToggle;
@@ -111,4 +126,3 @@ togglePasswordButtons.forEach((button) => {
         }
     });
 });
-
