@@ -10,104 +10,107 @@ const confirmInput = document.getElementById('password_confirmation');
 const roleInput = document.getElementById('role');
 
 const todayIso = new Date().toISOString().split('T')[0];
-if (birthInput) {
-    birthInput.setAttribute('max', todayIso);
+if (birthInput) birthInput.setAttribute('max', todayIso);
+
+// Debounce utility
+function debounce(fn, delay = 300) {
+    let timer;
+    return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
 }
 
-const validators = {
-    name: (value) => value.trim().length >= 3,
-    email: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
-    phone: (value) => /^\d{10,11}$/.test(value),
-    birth_date: (value) => !!value && new Date(value) <= new Date(),
-    gender: (value) => !!value,
-    location: (value) => value.trim().length > 0,
-    password: (value) => value.length >= 8,
-    confirm: (value) => value === passwordInput.value && value.length >= 8,
-    role: (value) => !!value,
+// Fields validators and messages
+const fields = {
+    name: { validator: v => v.trim().length >= 3, message: 'Name must be at least 3 characters.' },
+    email: { validator: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), message: 'Enter a valid email address.' },
+    phone: { validator: v => /^\d{10,11}$/.test(v), message: 'Phone must be 10 or 11 digits.' },
+    birth_date: { validator: v => !!v && new Date(v) <= new Date(), message: 'Select a valid birth date that is not in the future.' },
+    gender: { validator: v => !!v, message: 'Select a gender.' },
+    location: { validator: v => v.trim().length > 0, message: 'Enter your location.' },
+    password: { validator: v => v.length >= 8, message: 'Password must be at least 8 characters.' },
+    confirm: { validator: v => v === passwordInput.value && v.length >= 8, message: 'Passwords must match.' },
+    role: { validator: v => !!v, message: 'Select a role.' },
 };
 
-const messages = {
-    name: 'Name must be at least 3 characters.',
-    email: 'Enter a valid email address.',
-    phone: 'Phone must be 10 or 11 digits.',
-    birth_date: 'Select a valid birth date that is not in the future.',
-    gender: 'Select a gender.',
-    location: 'Enter your location.',
-    password: 'Password must be at least 8 characters.',
-    confirm: 'Passwords must match.',
-    role: 'Select a role.',
-};
-
+// Requirement list
 const requirementItems = {};
-document.querySelectorAll('#requirementsList li').forEach((item) => {
+document.querySelectorAll('#requirementsList li').forEach(item => {
     requirementItems[item.dataset.rule] = item;
+    item.classList.remove('valid', 'invalid');
 });
 
-const setInputState = (element, isValid) => {
-    if (!element) return;
+// Validate a single field
+function validateField(element, key) {
+    const { validator, message } = fields[key];
+    const isValid = validator(element.value);
+
+    // Input styling
     element.classList.remove('is-valid', 'is-invalid');
     element.classList.add(isValid ? 'is-valid' : 'is-invalid');
-};
+    element.setAttribute('aria-invalid', !isValid);
 
-const setRequirementStatus = (rule, isValid) => {
-    const item = requirementItems[rule];
-    if (!item) return;
-    const icon = item.querySelector('.status-icon');
-    item.classList.remove('valid', 'invalid');
-    item.classList.add(isValid ? 'valid' : 'invalid');
-    if (icon) icon.textContent = isValid ? '✔' : '•';
-};
-
-Object.keys(requirementItems).forEach((rule) => setRequirementStatus(rule, false));
-
-function validateField(element, key) {
-    const isValid = validators[key](element.value);
+    // Feedback
     const feedback = document.getElementById(`${key}Feedback`);
     if (feedback) {
-        feedback.textContent = isValid ? 'Looks good' : messages[key];
+        feedback.textContent = isValid ? 'Looks good' : message;
         feedback.style.color = isValid ? 'green' : 'red';
     }
-    if (element) setInputState(element, isValid);
-    if (requirementItems[key]) setRequirementStatus(key, isValid);
-    if (key === 'confirm') setRequirementStatus('confirm', isValid);
+
+    // Requirement list
+    const reqItem = requirementItems[key];
+    if (reqItem) {
+        reqItem.classList.remove('valid', 'invalid');
+        reqItem.classList.add(isValid ? 'valid' : 'invalid');
+        const icon = reqItem.querySelector('.status-icon');
+        if (icon) icon.textContent = isValid ? '✔' : '•';
+    }
+
     return isValid;
 }
 
-[nameInput, emailInput, phoneInput, birthInput, genderInput, locationInput, passwordInput, confirmInput].forEach((input) => {
-    if (!input) return;
+// Input listeners
+const inputs = [nameInput, emailInput, phoneInput, birthInput, genderInput, locationInput, passwordInput, confirmInput].filter(Boolean);
+inputs.forEach(input => {
     const key = input.id === 'password_confirmation' ? 'confirm' : input.id;
-    input.addEventListener('input', () => validateField(input, key));
+    input.addEventListener('input', debounce(() => validateField(input, key)));
 });
 
+// Role change listener
 if (roleInput) {
-    roleInput.addEventListener('change', () => setRequirementStatus('role', validators.role(roleInput.value)));
+    roleInput.addEventListener('change', () => validateField(roleInput, 'role'));
 }
 
-registerForm.addEventListener('submit', function (e) {
-    let isValid = true;
-    [nameInput, emailInput, phoneInput, birthInput, genderInput, locationInput, passwordInput, confirmInput].forEach((input) => {
-        const key = input.id === 'password_confirmation' ? 'confirm' : input.id;
-        isValid = validateField(input, key) && isValid;
+// Form submit
+if (registerForm) {
+    registerForm.addEventListener('submit', function (e) {
+        let isValid = true;
+        inputs.forEach(input => {
+            const key = input.id === 'password_confirmation' ? 'confirm' : input.id;
+            isValid = validateField(input, key) && isValid;
+        });
+        isValid = validateField(roleInput, 'role') && isValid;
+
+        if (!isValid) e.preventDefault();
     });
-    isValid = validators.role(roleInput.value) && isValid;
-    setRequirementStatus('role', validators.role(roleInput.value));
+}
 
-    if (!isValid) e.preventDefault();
-});
+// Password toggle
+function togglePassword(button) {
+    const target = document.getElementById(button.dataset.passwordToggle);
+    if (!target) return;
 
-document.querySelectorAll('[data-password-toggle]').forEach((button) => {
-    button.addEventListener('click', () => {
-        const target = document.getElementById(button.dataset.passwordToggle);
-        if (!target) return;
+    const showing = target.type === 'text';
+    target.type = showing ? 'password' : 'text';
+    button.setAttribute('aria-pressed', !showing);
 
-        const showing = target.type === 'text';
-        target.type = showing ? 'password' : 'text';
-        button.setAttribute('aria-pressed', showing ? 'false' : 'true');
-
-        const icon = button.querySelector('i');
-        if (icon) {
-            icon.classList.toggle('bi-eye', showing);
-            icon.classList.toggle('bi-eye-slash', !showing);
-        }
-    });
-});
+    const icon = button.querySelector('i');
+    if (icon) {
+        icon.classList.toggle('bi-eye', showing);
+        icon.classList.toggle('bi-eye-slash', !showing);
+    }
+}
+document.querySelectorAll('[data-password-toggle]').forEach(btn =>
+    btn.addEventListener('click', () => togglePassword(btn))
+);
