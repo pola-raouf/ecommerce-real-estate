@@ -1,98 +1,119 @@
-// Demo property data
-const properties = [
-    { id: 1, title: "Modern Apartment", type: "Apartment", location: "Maadi", size: 120, price: 1500000, image: "https://via.placeholder.com/400x200" },
-    { id: 2, title: "Luxury Villa", type: "Villa", location: "New Cairo", size: 350, price: 4500000, image: "https://via.placeholder.com/400x200" },
-    { id: 3, title: "Cozy Studio", type: "Studio", location: "Nasr City", size: 60, price: 700000, image: "https://via.placeholder.com/400x200" },
-    { id: 4, title: "Penthouse Suite", type: "Apartment", location: "Maadi", size: 200, price: 3000000, image: "https://via.placeholder.com/400x200" },
-];
+// -------------------- properties.js --------------------
 
-// Select DOM elements
-const container = document.getElementById('propertiesContainer');
-const form = document.getElementById('filterForm');
-const resetBtn = document.getElementById('resetBtn');
+// DOM elements
+const container = document.getElementById('properties-list');
+const form = document.querySelector('form');
+const resetBtn = document.querySelector('a.btn-secondary');
 
-function renderProperties(filteredProps) {
+let propertiesData = [];
+
+/**
+ * Render properties in the frontend
+ * Uses prop.image_url from backend; fallback to placeholder if missing
+ */
+function renderProperties(properties) {
     container.innerHTML = '';
-    if (filteredProps.length === 0) {
-        container.innerHTML = '<div class="col-12"><p class="text-center text-muted fs-5">No properties found matching your criteria.</p></div>';
+
+    if (!properties.length) {
+        container.innerHTML = `
+            <div class="col-12">
+                <p class="text-center text-muted fs-5">
+                    No properties found matching your criteria.
+                </p>
+            </div>`;
         return;
     }
 
-    filteredProps.forEach(prop => {
+    properties.forEach(prop => {
         const col = document.createElement('div');
         col.className = 'col';
         col.innerHTML = `
-        <div class="card bg-dark text-white shadow h-100">
-            <img src="${prop.image}" class="card-img-top object-fit-cover" alt="${prop.title}" style="height:200px;">
-            <div class="card-body d-flex flex-column">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h5 class="card-title text-white mb-0">${prop.title}</h5>
-                    <span class="badge bg-secondary">ID: ${prop.id}</span>
+            <div class="card shadow-sm h-100">
+                <img src="${prop.image_url || '/images/properties/placeholder.jpg'}" 
+                     class="card-img-top object-fit-cover" 
+                     alt="${prop.category || 'Property'}">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title mb-0">${prop.category || 'N/A'}</h5>
+                        <span class="badge bg-secondary">ID: ${prop.id}</span>
+                    </div>
+                    <p class="card-text mb-1">
+                        <span class="text-info fw-bold">Status:</span> ${prop.status || 'N/A'}
+                    </p>
+                    <p class="card-text mb-1">
+                        <span class="text-info fw-bold">Location:</span> ${prop.location || 'N/A'}
+                    </p>
+                    <p class="card-text mb-1">
+                        <span class="text-info fw-bold">Type:</span> ${prop.transaction_type ? prop.transaction_type.charAt(0).toUpperCase() + prop.transaction_type.slice(1) : 'N/A'}
+                    </p>
+                    <p class="card-text mb-3">
+                        <span class="text-success fw-bold">Price:</span> ${Number(prop.price || 0).toLocaleString()} EGP
+                    </p>
+                    <div class="mt-auto">
+                        <a href="/properties/${prop.id}" class="btn btn-primary w-100">
+                            <i class="fas fa-info-circle me-1"></i> View Details
+                        </a>
+                    </div>
                 </div>
-                <p class="card-text mb-1"><span class="text-info fw-bold">Type:</span> ${prop.type}</p>
-                <p class="card-text mb-1"><span class="text-info fw-bold">Size:</span> ${prop.size} sqm</p>
-                <p class="card-text mb-1"><span class="text-info fw-bold">Location:</span> ${prop.location}</p>
-                <p class="card-text mb-3"><span class="text-success fw-bold">Price:</span> ${prop.price.toLocaleString()} EGP</p>
-                <a href="#" class="btn btn-success mt-auto">View Details</a>
-            </div>
-        </div>`;
+            </div>`;
+
+        // Fallback in case image file is broken
+        const imgEl = col.querySelector('img');
+        imgEl.onerror = () => {
+            imgEl.src = '/images/properties/placeholder.jpg';
+        };
+
         container.appendChild(col);
     });
 }
 
+/**
+ * Fetch properties from backend JSON API
+ * Backend should return prop.image_url that always exists or fallback
+ */
+async function fetchProperties(filters = {}) {
+    const params = new URLSearchParams(filters);
+
+    try {
+        const res = await fetch(`/properties/json?${params.toString()}`);
+        if (!res.ok) throw new Error('Failed to fetch properties');
+        const data = await res.json();
+        propertiesData = data;
+        renderProperties(data);
+    } catch (err) {
+        container.innerHTML = `
+            <div class="col-12">
+                <p class="text-center text-danger fs-5">${err.message}</p>
+            </div>`;
+    }
+}
+
+/**
+ * Gather filters from form and fetch properties
+ */
 function applyFilters() {
-    let filtered = [...properties];
+    const filters = {
+        search_term: document.getElementById('search_term')?.value || '',
+        category: document.getElementById('category')?.value || '',
+        location: document.getElementById('location')?.value || '',
+        min_price: document.getElementById('min_price')?.value || '',
+        max_price: document.getElementById('max_price')?.value || '',
+        sort_by: document.getElementById('sort_by')?.value || ''
+    };
 
-    const search = document.getElementById('search_term').value.toLowerCase();
-    const type = document.getElementById('property_type').value;
-    const location = document.getElementById('property_location').value;
-    const minPrice = parseFloat(document.getElementById('min_price').value);
-    const maxPrice = parseFloat(document.getElementById('max_price').value);
-    const sort = document.getElementById('sort_by').value;
-
-    // Search filter
-    if (search) {
-        filtered = filtered.filter(p => 
-            p.title.toLowerCase().includes(search) ||
-            p.location.toLowerCase().includes(search) ||
-            p.id.toString() === search
-        );
-    }
-
-    // Type filter
-    if (type) filtered = filtered.filter(p => p.type === type);
-
-    // Location filter
-    if (location) filtered = filtered.filter(p => p.location === location);
-
-    // Min price filter
-    if (!isNaN(minPrice)) filtered = filtered.filter(p => p.price >= minPrice);
-
-    // Max price filter
-    if (!isNaN(maxPrice)) filtered = filtered.filter(p => p.price <= maxPrice);
-
-    // Sorting
-    switch(sort) {
-        case 'price_asc': filtered.sort((a,b)=>a.price-b.price); break;
-        case 'price_desc': filtered.sort((a,b)=>b.price-a.price); break;
-        case 'size_desc': filtered.sort((a,b)=>b.size-a.size); break;
-        case 'id_desc':
-        default: filtered.sort((a,b)=>b.id-a.id); break;
-    }
-
-    renderProperties(filtered);
+    fetchProperties(filters);
 }
 
 // Event listeners
-form.addEventListener('submit', e => {
+form?.addEventListener('submit', e => {
     e.preventDefault();
     applyFilters();
 });
 
-resetBtn.addEventListener('click', () => {
+resetBtn?.addEventListener('click', () => {
     form.reset();
-    renderProperties(properties);
+    fetchProperties();
 });
 
-// Initial render
-renderProperties(properties);
+// Initial load
+fetchProperties();
