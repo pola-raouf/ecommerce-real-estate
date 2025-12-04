@@ -2,218 +2,201 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Profile\UpdateProfileRequest;
+use App\Http\Requests\Profile\UpdatePasswordRequest;
 use App\Models\UserProfile;
-use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Http\Request;
+use App\Services\Logger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
-use App\Services\Logger;
+use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    /**
-     * Show profile page.
-     */
-    public function show()
-    {
-        $logger = Logger::getInstance();
+    protected Logger $logger;
 
-    try {
-        $logger->info('Profile page accessed', [
-            'user_id' => Auth::id(),
-            'email' => Auth::user()->email ?? null,
-        ]);
-    } catch (\Exception $e) {
-        $logger->error('Profile page logging failed', [
-            'error' => $e->getMessage(),
-            'user_id' => Auth::id(),
-        ]);
+    public function __construct()
+    {
+        $this->logger = Logger::getInstance();
     }
+
+    /** ------------------------------------------
+     * Show Profile Page
+     * ------------------------------------------ */
+    public function show(): View
+    {
+        $this->logger->info('Profile page accessed', [
+            'user_id' => Auth::id(),
+            'email' => Auth::user()->email,
+        ]);
+
         return view('myauth.profile', ['user' => Auth::user()]);
     }
 
-    /**
-     * Update the authenticated user's profile.
-     */
-    public function update(Request $request)
+
+    /** ------------------------------------------
+     * Update profile (except password)
+     * ------------------------------------------ */
+    public function update(UpdateProfileRequest $request)
     {
-        $logger = Logger::getInstance();
-    $user = Auth::user();
+        $user = Auth::user();
+        $data = $request->validated();
 
-    try {
-        // Validation
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => ['required','email','max:255', Rule::unique('users')->ignore($user->id)],
-            'phone' => 'nullable|string|max:20',
-            'birth_date' => 'nullable|date',
-            'gender' => 'nullable|in:male,female,other',
-            'location' => 'nullable|string|max:255',
-            'current_password' => 'nullable|string',
-            'password' => 'nullable|string|min:6|confirmed',
-            'profile_image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:3072',
-        ]);
+        // Update text fields
+        $user->update($request->only([
+            'name', 'email', 'phone', 'birth_date', 'gender', 'location'
+        ]));
 
-        if ($validator->fails()) {
-            if ($request->ajax()) {
-                return response()->json(['errors' => $validator->errors()], 422);
-            }
-            return back()->withErrors($validator)->withInput();
-        }
+        // Update profile image
+        $this->handleProfileImage($request, $user);
 
-        // Update user fields
-        $user->fill($request->only(['name','email','phone','birth_date','gender','location']));
-
-        // Password change logic
-        if ($request->filled('password')) {
-            $secretKey = env('PASSWORD_HMAC_KEY');
-            $hashedCurrentInput = hash_hmac('sha256', $request->current_password ?? '', $secretKey);
-
-            if (!$request->filled('current_password') || !Hash::check($hashedCurrentInput, $user->password)) {
-                $error = ['current_password' => ['Current password is incorrect.']];
-                return $request->ajax()
-                    ? response()->json(['errors' => $error], 422)
-                    : back()->withErrors($error);
-            }
-
-            $newHash = hash_hmac('sha256', $request->password, $secretKey);
-            $user->password = Hash::make($newHash);
-
-            // Send email and fire event
-            $token = Password::createToken($user);
-            $resetUrl = route('password.reset', ['token'=>$token,'email'=>$user->email]);
-            Mail::send('emails.password_changed', ['user'=>$user,'resetUrl'=>$resetUrl], function($message) use ($user) {
-                $message->to($user->email,$user->name)->subject('Your password has been changed');
-            });
-            event(new PasswordReset($user));
-        }
-
-        // Profile image upload
-        $profile = $user->profile ?? new UserProfile(['user_id'=>$user->id]);
-        if ($request->hasFile('profile_image')) {
-            $destinationPath = public_path('images/profile');
-            if (!File::exists($destinationPath)) File::makeDirectory($destinationPath,0755,true);
-
-            if ($profile->profile_image && File::exists($destinationPath.'/'.$profile->profile_image)) {
-                File::delete($destinationPath.'/'.$profile->profile_image);
-            }
-
-            $filename = uniqid('profile_',true).'.'.$request->file('profile_image')->extension();
-            $request->file('profile_image')->move($destinationPath,$filename);
-            $profile->profile_image = $filename;
-        }
-
-        $user->save();
-        if (!$profile->exists) $user->profile()->save($profile);
-        elseif ($profile->isDirty()) $profile->save();
         $user->load('profile');
 
-        $logger->info('User profile updated successfully', ['user_id'=>$user->id]);
+        $this->logger->info('Profile updated', [
+            'user_id' => $user->id
+        ]);
 
-        if ($request->ajax()) {
-            return response()->json([
-                'success'=>true,
-                'profile_image'=>$user->profile_image_url,
-                'has_profile_image'=> (bool) optional($user->profile)->profile_image,
-                'message'=>'Profile updated successfully!',
-            ]);
+        return $this->jsonOrRedirect(
+            message: 'Profile updated successfully!',
+            data: ['profile_image' => $user->profile_image_url]
+        );
+    }
+
+
+    /** ------------------------------------------
+     * Update Password
+     * ------------------------------------------ */
+    public function updatePassword(UpdatePasswordRequest $request)
+    {
+        $user = Auth::user();
+
+        // Check current password
+        if (! $this->checkCurrentPassword($request->current_password)) {
+            return $this->invalid(
+                field: 'current_password',
+                message: 'Current password is incorrect.'
+            );
         }
 
-        return back()->with('success','Profile updated successfully!');
+        // Hash + update new password
+        $user->password = Hash::make($this->hmac($request->password));
+        $user->save();
 
-    } catch (\Exception $e) {
-        $logger->error('Profile update failed', ['user_id'=>$user->id, 'error'=>$e->getMessage()]);
-        return $request->ajax()
-            ? response()->json(['error'=>'Update failed'],500)
-            : back()->with('error','Update failed');
-    }
+        // Email notification
+        $token = Password::createToken($user);
+        $resetUrl = route('password.reset', ['token' => $token, 'email' => $user->email]);
+
+        Mail::send('emails.password_changed', [
+            'user' => $user,
+            'resetUrl' => $resetUrl
+        ], function ($message) use ($user) {
+            $message->to($user->email)->subject('Your password has been changed');
+        });
+
+        $this->logger->info('Password updated', ['user_id' => $user->id]);
+
+        return $this->jsonOrRedirect('Password updated successfully!');
     }
 
-    /**
-     * Delete the authenticated user's profile picture.
-     */
+
+    /** ------------------------------------------
+     * Delete profile picture
+     * ------------------------------------------ */
     public function deletePic()
     {
-        $logger = Logger::getInstance();
-    $user = Auth::user();
-    $profile = $user->profile;
+        $user = Auth::user();
+        $profile = $user->profile;
 
-    try {
         if ($profile && $profile->profile_image) {
-            $destinationPath = public_path('images/profile/'.$profile->profile_image);
-            if (File::exists($destinationPath)) {
-                File::delete($destinationPath);
-            }
+            $path = public_path('images/profile/' . $profile->profile_image);
+            if (File::exists($path)) File::delete($path);
 
-            $profile->profile_image = null;
-            $profile->save();
-
-            $logger->info('Profile picture deleted', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-            ]);
+            $profile->update(['profile_image' => null]);
         }
-    } catch (\Exception $e) {
-        $logger->error('Profile picture deletion failed', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'error' => $e->getMessage(),
-        ]);
-    }
 
-    $user->load('profile');
-
-    return response()->json([
-        'success' => true,
-        'profile_image' => $user->profile_image_url,
-        'has_profile_image' => false,
-        'message' => 'Profile picture deleted!',
-    ]);
-    }
-
-    /**
-     * Validate the current password via AJAX.
-     */
-    public function checkPassword(Request $request)
-    {
-        $logger = Logger::getInstance();
-    $user = Auth::user();
-    $currentPassword = $request->input('current_password');
-    $secretKey = env('PASSWORD_HMAC_KEY');
-
-    if (!$currentPassword) {
-        $logger->warning('Password check failed - empty input', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-        ]);
+        $this->logger->info('Profile picture deleted', ['user_id' => $user->id]);
 
         return response()->json([
-            'valid' => false,
-            'message' => 'Enter your current password'
+            'success' => true,
+            'has_profile_image' => false,
+            'message' => 'Profile picture deleted!'
         ]);
     }
 
-    $hashedInput = $secretKey ? hash_hmac('sha256', $currentPassword, $secretKey) : $currentPassword;
 
-    if (Hash::check($hashedInput, $user->password)) {
-        $logger->info('Password check successful', [
-            'user_id' => $user->id,
-            'email' => $user->email,
+    /** ------------------------------------------
+     * AJAX: Validate current password
+     * ------------------------------------------ */
+    public function checkPassword()
+    {
+        $isValid = $this->checkCurrentPassword(request('current_password'));
+
+        return response()->json([
+            'valid' => $isValid,
+            'message' => $isValid ? 'Password is correct' : 'Password is incorrect'
         ]);
-
-        return response()->json(['valid' => true, 'message' => 'Password is correct']);
     }
 
-    $logger->warning('Password check failed - incorrect password', [
-        'user_id' => $user->id,
-        'email' => $user->email,
-    ]);
 
-    return response()->json(['valid' => false, 'message' => 'Password is incorrect']);
+    /* ===============================================================
+     *  HELPERS
+     * =============================================================== */
+
+    private function hmac(string $password): string
+{
+    return hash_hmac('sha256', $password, env('PASSWORD_HMAC_KEY'));
+}
+
+    private function checkCurrentPassword($input): bool
+{
+    if (! $input) return false;
+
+    // ✅ Apply same HMAC + bcrypt check
+    return Hash::check($this->hmac($input), Auth::user()->password);
+}
+
+    private function handleProfileImage($request, $user)
+    {
+        if (! $request->hasFile('profile_image')) return;
+
+        $profile = $user->profile ?? new UserProfile(['user_id' => $user->id]);
+        $path = public_path('images/profile');
+
+        if (! File::exists($path)) File::makeDirectory($path, 0755, true);
+
+        // Delete old image
+        if ($profile->profile_image && File::exists("$path/{$profile->profile_image}")) {
+            File::delete("$path/{$profile->profile_image}");
+        }
+
+        // Save new image
+        $filename = uniqid('profile_', true) . '.' . $request->file('profile_image')->extension();
+        $request->file('profile_image')->move($path, $filename);
+
+        $profile->profile_image = $filename;
+
+        $profile->exists
+            ? $profile->save()
+            : $user->profile()->save($profile);
+    }
+
+
+    /** Unified JSON or redirect response */
+    private function jsonOrRedirect(string $message, array $data = [])
+    {
+        return request()->ajax()
+            ? response()->json(['success' => true, 'message' => $message] + $data)
+            : back()->with('success', $message);
+    }
+
+    private function invalid(string $field, string $message)
+    {
+        $error = [$field => [$message]];
+
+        return request()->ajax()
+            ? response()->json(['errors' => $error], 422)
+            : back()->withErrors($error);
     }
 }
