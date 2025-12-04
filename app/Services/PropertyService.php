@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 class PropertyService
 {
     protected Logger $logger;
-
+//l
     public function __construct()
     {
         $this->logger = Logger::getInstance();
