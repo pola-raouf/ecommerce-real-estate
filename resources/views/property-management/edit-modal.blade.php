@@ -1,4 +1,4 @@
-<!-- Edit Property Modal -->
+<!-- Edit Property Modall -->
 <div id="edit-property-container" class="modal-overlay" style="display:none;">
     <div class="modal">
         <div class="modal-header">
