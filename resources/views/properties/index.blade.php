@@ -11,7 +11,7 @@
 </head>
 <body>
 
-<!-- ================= NAVBAR ================= -->
+<!-- ===========-====== NAVBAR ================= -->
 <nav id="mainNavbar" class="navbar navbar-expand-lg navbar-dark fixed-top">
     <div class="container">
         <a class="navbar-brand fw-bold fs-4" href="{{ url('/') }}">
