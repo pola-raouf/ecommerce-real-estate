@@ -73,41 +73,33 @@ Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.
 
 Route::resource('properties', PropertyController::class)->except(['edit', 'update', 'destroy']); 
 
-Route::get('/properties', [PropertyController::class, 'index'])->name('properties.index');
-Route::middleware(['auth'])->group(function () {
-Route::get('/properties/{property}', [PropertyController::class, 'show'])->name('properties.show');
-});
 Route::get('/property-details', function() {
     return view('properties.property-details');
 })->name('property-details');
 
-Route::post('/properties/{property}/reserve', [PropertyController::class, 'reserve'])
-    ->name('properties.reserve');
-Route::delete('/properties/{property}/reservation', [PropertyController::class, 'cancelReservation'])
-    ->name('properties.cancelReservation');
+Route::get('/properties', [PropertyController::class, 'index'])->name('properties.index');
+Route::get('/properties/create', [PropertyController::class, 'create'])->name('properties.create');
+Route::post('/properties', [PropertyController::class, 'store'])->name('properties.store');
 
+Route::get('/properties/{property}', [PropertyController::class, 'show'])->name('properties.show');
 
-// Property management routes
+Route::get('/properties/{property}/edit', [PropertyController::class, 'edit'])->name('properties.edit');
+Route::put('/properties/{property}', [PropertyController::class, 'update'])->name('properties.update');
+Route::delete('/properties/{property}', [PropertyController::class, 'destroy'])->name('properties.destroy');
 
-
-Route::middleware(['auth',Role::class.':seller,admin'])->group(function () {
-
-    // Property management page
-    Route::get('/property-management', [PropertyController::class, 'propertyManagement'])->name('property-management');
-
-    // Store new property (AJAX or normal form)
-    Route::post('/properties', [PropertyController::class, 'store'])->name('properties.store');
-
-    // Edit property form (optional if using modal)
-    //Route::get('/properties/{property}/edit', [PropertyController::class, 'edit'])->name('properties.edit');
-
-    // Update property (AJAX or normal form)
-    Route::put('/properties/{property}', [PropertyController::class, 'update'])->name('properties.update');
-
-    // Delete property (AJAX or normal form)
-    Route::delete('/properties/{property}', [PropertyController::class, 'destroy'])->name('properties.destroy');
+// Reservations
+// web.php
+Route::middleware('auth')->group(function () {
+    Route::post('/properties/{property}/reserve', [PropertyController::class, 'reserve'])->name('properties.reserve');
+    Route::delete('/properties/{property}/reservation', [PropertyController::class, 'cancelReservation'])->name('properties.cancelReservation');
 });
 
+
+    Route::get('/properties/json', [PropertyController::class, 'json'])->name('properties.json');
+
+    Route::get('/property-management', [PropertyController::class, 'propertyManagement'])
+    ->name('property-management')
+    ->middleware(['auth', 'role:seller,admin']);
 Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])
     ->name('password.request');
 
