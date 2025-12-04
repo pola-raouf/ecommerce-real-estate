@@ -68,14 +68,12 @@ Route::get('/users/search', [UserController::class, 'search'])->name('users.sear
 Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 //Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
 
-Route::middleware(['auth'])->group(function () {
-    Route::resource('properties', PropertyController::class)
-        ->except(['edit', 'update', 'destroy']); 
-});
 
+Route::resource('properties', PropertyController::class)->except(['edit', 'update', 'destroy']); 
+Route::middleware(['auth'])->group(function () {
 Route::get('/properties', [PropertyController::class, 'index'])->name('properties.index');
 Route::get('/properties/{property}', [PropertyController::class, 'show'])->name('properties.show');
-
+}
 Route::get('/property-details', function() {
     return view('properties.property-details');
 })->name('property-details');
