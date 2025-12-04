@@ -11,138 +11,148 @@ use App\Services\Logger;
 
 class DashboardController extends Controller
 {
+    protected Logger $logger;
+
+    public function __construct()
+    {
+        $this->logger = Logger::getInstance();
+    }
+
+    // =================== Dashboard Main ===================
     public function index()
     {
-        $logger = \App\Services\Logger::getInstance();
         $user = auth()->user();
+        $this->logDashboardAccess($user);
 
-        try {
-        $logger->info('Dashboard accessed', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'role' => $user->role,
-        ]);
-    } catch (\Exception $e) {
-        $logger->error('Dashboard logging failed', [
-            'user_id' => $user->id,
-            'error' => $e->getMessage(),
-        ]);
-    }
-        
         if ($user->role === 'admin') {
-            $totalListings = Property::count();
-            $last30Listings = Property::where('created_at', '>=', now()->subDays(30))->count();
-            $prev30Listings = Property::whereBetween('created_at', [now()->subDays(60), now()->subDays(30)])->count();
-            $listingsDelta = $this->calculateDelta($last30Listings, $prev30Listings);
-
-            $totalReservations = Property::where('status', 'reserved')->count();
-            $last30Reservations = Property::where('status', 'reserved')->where('updated_at', '>=', now()->subDays(30))->count();
-            $prev30Reservations = Property::where('status', 'reserved')->whereBetween('updated_at', [now()->subDays(60), now()->subDays(30)])->count();
-            $reservationsDelta = $this->calculateDelta($last30Reservations, $prev30Reservations);
-
-            $totalVisitors = DB::table('sessions')->count();
-            $last30Visitors = DB::table('sessions')->where('last_activity', '>=', now()->subDays(30)->timestamp)->count();
-            $prev30Visitors = DB::table('sessions')->whereBetween('last_activity', [now()->subDays(60)->timestamp, now()->subDays(30)->timestamp])->count();
-            $visitorsDelta = $this->calculateDelta($last30Visitors, $prev30Visitors);
-
-            $clients = User::where('role', 'seller')->get();
-
-            $initialProperties = Property::all();
-            $pieData = $this->generatePieData($initialProperties);
-            $salesData = $this->generateMonthlyStats($initialProperties);
-
-            return view('myauth.dashboard', compact(
-                'totalListings','listingsDelta',
-                'totalReservations','reservationsDelta',
-                'totalVisitors','visitorsDelta',
-                'clients','user','pieData','salesData'
-            ));
+            $stats = $this->getAdminStats();
+            return view('myauth.dashboard', array_merge(['user' => $user], $stats));
         }
 
-        $listings = $user->properties()->count();
-        $reservations = $user->properties()->where('status','reserved')->count();
-        $visitors = $user->visitors ?? 0;
-        $pieData = $this->generatePieData($user->properties);
-        $salesData = $this->generateMonthlyStats($user->properties);
-
-        return view('myauth.dashboard', compact(
-            'user','listings','reservations','visitors','pieData','salesData'
-        ));
+        $stats = $this->getUserStats($user);
+        return view('myauth.dashboard', array_merge(['user' => $user], $stats));
     }
 
-    private function calculateDelta($current, $previous)
-    {
-        if ($previous == 0) return 0;
-        return round((($current - $previous) / $previous) * 100);
-    }
+    // =================== Private Helpers ===================
 
-    // Admin-only AJAX endpoint
-    public function getClientData(Request $request)
+    private function logDashboardAccess(User $user): void
     {
-        $logger = \App\Services\Logger::getInstance();
-        $user = auth()->user();
-        
-        if ($user->role !== 'admin') {
-        try {
-            $logger->warning('Unauthorized client data access attempt', [
+        $this->safeLog(function() use ($user) {
+            $this->logger->info('Dashboard accessed', [
                 'user_id' => $user->id,
                 'email' => $user->email,
+                'role' => $user->role,
             ]);
+        });
+    }
+
+    private function safeLog(callable $callback): void
+    {
+        try {
+            $callback();
         } catch (\Exception $e) {
-            // fail silently
+            $this->logger->error('Logging failed', ['error' => $e->getMessage()]);
         }
+    }
+
+    private function getAdminStats(): array
+    {
+        $properties = Property::all();
+        $clients = User::where('role', 'seller')->get();
+
+        $totalListings = Property::count();
+        $listingsDelta = $this->calculateDelta(
+            Property::where('created_at', '>=', now()->subDays(30))->count(),
+            Property::whereBetween('created_at', [now()->subDays(60), now()->subDays(30)])->count()
+        );
+
+        $totalReservations = Property::where('status', 'reserved')->count();
+        $reservationsDelta = $this->calculateDelta(
+            Property::where('status', 'reserved')->where('updated_at', '>=', now()->subDays(30))->count(),
+            Property::where('status', 'reserved')->whereBetween('updated_at', [now()->subDays(60), now()->subDays(30)])->count()
+        );
+
+        $totalVisitors = DB::table('sessions')->count();
+        $visitorsDelta = $this->calculateDelta(
+            DB::table('sessions')->where('last_activity', '>=', now()->subDays(30)->timestamp)->count(),
+            DB::table('sessions')->whereBetween('last_activity', [now()->subDays(60)->timestamp, now()->subDays(30)->timestamp])->count()
+        );
+
+        return [
+            'totalListings' => $totalListings,
+            'listingsDelta' => $listingsDelta,
+            'totalReservations' => $totalReservations,
+            'reservationsDelta' => $reservationsDelta,
+            'totalVisitors' => $totalVisitors,
+            'visitorsDelta' => $visitorsDelta,
+            'clients' => $clients,
+            'pieData' => $this->generatePieData($properties),
+            'salesData' => $this->generateMonthlyStats($properties),
+        ];
+    }
+
+    private function getUserStats(User $user): array
+    {
+        $properties = $user->properties;
+
+        return [
+            'listings' => $properties->count(),
+            'reservations' => $properties->where('status','reserved')->count(),
+            'visitors' => $user->visitors ?? 0,
+            'pieData' => $this->generatePieData($properties),
+            'salesData' => $this->generateMonthlyStats($properties),
+        ];
+    }
+
+    private function calculateDelta(int $current, int $previous): int
+    {
+        return $previous === 0 ? 0 : round((($current - $previous) / $previous) * 100);
+    }
+
+    // =================== Admin AJAX Endpoint ===================
+public function getClientData(Request $request)
+{
+    $user = auth()->user();
+
+    if ($user->role !== 'admin') {
+        $this->safeLog(fn() => $this->logger->warning('Unauthorized client data access', [
+            'user_id' => $user->id,
+            'email' => $user->email
+        ]));
         return response()->json(['error' => 'Unauthorized'], 403);
     }
 
-         try {
+    try {
         if (empty($request->id)) {
             $properties = Property::all();
             $visitors = DB::table('sessions')->count();
-
-            $logger->info('Admin accessed all clients data', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-            ]);
         } else {
             $client = User::with('properties')->find($request->id);
             if (!$client) {
-                $logger->warning('Admin attempted to access non-existent client', [
-                    'user_id' => $user->id,
-                    'client_id' => $request->id,
-                ]);
+                $this->logger->warning('Client not found', ['client_id' => $request->id]);
                 return response()->json(['error' => 'Client not found'], 404);
             }
-
             $properties = $client->properties;
             $visitors = $client->visitors ?? 0;
-
-            $logger->info('Admin accessed client data', [
-                'user_id' => $user->id,
-                'client_id' => $client->id,
-                'email' => $user->email,
-            ]);
         }
-    } catch (\Exception $e) {
-        $logger->error('Failed to get client data', [
-            'user_id' => $user->id,
-            'error' => $e->getMessage(),
-        ]);
-        return response()->json(['error' => 'Failed to retrieve data'], 500);
-    }
-
-        $sales = $this->generateMonthlyStats($properties);
-        $pie = $this->generatePieData($properties);
 
         return response()->json([
             'listings' => $properties->count(),
             'reservations' => $properties->where('status', 'reserved')->count(),
             'visitors' => $visitors,
-            'sales' => $sales,
-            'pie' => $pie
+            'sales' => $this->generateMonthlyStats($properties),
+            'pie' => $this->generatePieData($properties), // ✅ key matches JS
         ]);
-    }
 
-    private function generateMonthlyStats($properties)
+    } catch (\Exception $e) {
+        $this->logger->error('Failed to get client data', ['error' => $e->getMessage()]);
+        return response()->json(['error' => 'Failed to retrieve data'], 500);
+    }
+}
+
+
+    // =================== Stats Helpers ===================
+    private function generateMonthlyStats($properties): array
     {
         $sales = [];
         $now = Carbon::now();
@@ -158,14 +168,14 @@ class DashboardController extends Controller
                 'label' => $start->format('M'),
                 'listings' => $monthlyProperties->count(),
                 'reservations' => $monthlyReservations,
-                'visitors' => rand(50,150)
+                'visitors' => rand(50,150) // Replace with real data if needed
             ];
         }
 
         return $sales;
     }
 
-    private function generatePieData($properties)
+    private function generatePieData($properties): array
     {
         return $properties->groupBy('category')->map->count()->toArray();
     }
