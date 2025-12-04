@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Property extends Model
 {
+    use HasFactory;
+    
     protected $fillable = [
     'category',
     'location',
@@ -33,20 +36,44 @@ class Property extends Model
         return $this->hasMany(PropertyImage::class);
     }
     public function reservation()
-    {
-        return $this->hasOne(PropertyReservation::class);
+{
+    return $this->hasOne(PropertyReservation::class);
+}
+
+// Check if reserved
+public function isReserved(): bool
+{
+    return $this->reservation !== null;
+}
+
+
+// User who reserved
+public function reservedByUser()
+{
+    return $this->reservation?->user;
+}
+
+// Can be reserved by user
+public function canBeReservedBy(User $user): bool
+{
+    return $this->status === 'available' && !$this->reservation;
+}
+
+// Can reservation be cancelled
+public function canReservationBeCancelledBy(User $user): bool
+{
+    return $this->reservation && $this->reservation->user_id === $user->id;
+}
+
+
+public function releaseReservation(): void
+{
+    if ($this->reservation) {
+        $this->reservation->delete();
     }
+    // removed: $this->update(['status' => 'available']);
+}
 
 
- public function isReserved()
-    {
-        return $this->reservation?->exists() ?? false;
-    }
-
-    // المستخدم الذي حجز
-    public function reservedByUser()
-    {
-        return $this->reservation?->user;
-    }   
 }
 
