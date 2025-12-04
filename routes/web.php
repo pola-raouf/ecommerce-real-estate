@@ -59,6 +59,8 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/delete-pic', [ProfileController::class, 'deletePic'])->name('profile.deletePic');
     Route::post('/profile/check-password', [ProfileController::class, 'checkPassword'])->name('profile.checkPassword');
+    Route::put('/profile/update-password', [ProfileController::class, 'updatePassword'])
+     ->name('profile.updatePassword');
 });
 
 Route::get('/users-management', [UserController::class, 'usersManagement'])->middleware(Role::class .':admin')->name('users-management');
