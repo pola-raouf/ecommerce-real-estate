@@ -39,7 +39,6 @@ const fetchEmailStatus = async (value) => {
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': token,
-            'Accept': 'application/json' 
         },
         body: JSON.stringify({ email: value }),
     });
