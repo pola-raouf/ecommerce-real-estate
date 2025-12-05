@@ -124,7 +124,7 @@
     </div>
 
     <!-- New Member Spotlight -->
-    <div class="row align-items-center mb-5 fade-up new-member-card">
+    <!-- <div class="row align-items-center mb-5 fade-up new-member-card">
         <div class="col-md-5 mb-4 mb-md-0">
             <img src="{{ url('images/about-us/nour.jpg') }}" class="img-fluid rounded shadow-lg glow-hover" alt="New Team Member">
         </div>
@@ -140,7 +140,7 @@
                 listings, and beyond.
             </p>
         </div>
-    </div>
+    </div> -->
 
 </div>
 
