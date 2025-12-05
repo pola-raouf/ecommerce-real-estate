@@ -91,26 +91,25 @@ class AuthController extends Controller
         return redirect()->route('login');
     }
 
-   public function emailExists(CheckEmailRequest $request)
+   public function emailExists(Request $request)
 {
+    $email = $request->input('email', '');
+
     try {
-        $email = trim($request->email); // remove spaces
-        \Log::info('Checking email existence:', ['email' => $email]);
-
-        $exists = User::where('email', $email)->exists();
-
-        $this->logger->info('Checked email existence', [
-            'email' => $email,
-            'exists' => $exists,
-            'checked_by' => auth()->id() ?? null,
-        ]);
-
+        $exists = User::where('email', trim($email))->exists();
+        // optional: try/catch logging
+        try {
+            $this->logger->info('Checked email existence', ['email' => $email, 'exists' => $exists]);
+        } catch (\Exception $e) {
+            \Log::error("Logger failed in emailExists: " . $e->getMessage());
+        }
         return response()->json(['exists' => $exists]);
     } catch (\Exception $e) {
-        $this->logger->error('Email check failed', ['email' => $request->email, 'error' => $e->getMessage()]);
-        return response()->json(['error' => 'Unable to check email'], 500);
+        \Log::error('Email check failed: ' . $e->getMessage());
+        return response()->json(['error' => 'Server error'], 500);
     }
 }
+
 
 
     // ----------------- private helpers -----------------
