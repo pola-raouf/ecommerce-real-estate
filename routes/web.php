@@ -35,9 +35,6 @@ Route::middleware(['auth', Role::class . ':seller,admin'])
     ->get('/dashboard/client-data', [DashboardController::class, 'getClientData'])
     ->name('dashboard.clientData');
 
-
-Route::post('/email-exists', [AuthController::class, 'emailExists'])->name('email.exists');
-
 route::middleware('guest')->group(function(){
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register.form');
 Route::post('/register', [AuthController::class, 'register'])->name('register');
@@ -45,6 +42,8 @@ Route::post('/register', [AuthController::class, 'register'])->name('register');
 Route::get('/login', [AuthController::class, 'showlogin'])->name('login.form');
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 });
+
+Route::post('/email-exists', [AuthController::class, 'emailExists'])->name('email.exists');
 
 
 
