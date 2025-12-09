@@ -33,9 +33,11 @@
                 <li class="nav-item">
                     <a class="nav-link fw-semibold {{ Request::is('properties') ? 'active' : '' }}" href="{{ route('properties.index') }}">Properties</a>
                 </li>
-                <li class="nav-item">
+                
+                    <li class="nav-item">
                     <a class="nav-link fw-semibold {{ Request::is('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">Dashboard</a>
                 </li>
+                
                 @auth
                     @if(auth()->user()->role === 'admin')
                         <li class="nav-item">
@@ -75,9 +77,7 @@
         </div>
     </div>
 </nav>
-
-@php $canAssignOwner = auth()->user()->role === 'admin'; @endphp
-
+@php $canAssignOwner = $canAssignOwner ?? false; @endphp
 <div id="toast-container"></div>
 <div class="users-management-container">
 
@@ -96,10 +96,13 @@
             <div class="field-control"><input type="number" name="price" placeholder="1000000" min="0" required></div>
 
             <div class="field-label">Transaction Type</div>
-            <select name="transaction_type" id="transaction_type" class="form-select">
-                <option value="sale">For Sale</option>
-                <option value="rent">For Rent</option>
-            </select>
+            <div class="field-control">
+                <select name="transaction_type" id="transaction_type" class="form-select" required>
+                    <option value="" disabled selected>Select Transaction Type</option>
+                    <option value="sale">For Sale</option>
+                    <option value="rent">For Rent</option>
+                </select>
+            </div>
 
             <div class="field-label">Status</div>
             <div class="field-control">
@@ -112,7 +115,7 @@
             </div>
 
             <div class="field-label">Description</div>
-            <div class="field-control"><textarea name="description" rows="3" placeholder="Property description"></textarea></div>
+            <div class="field-control"><textarea name="description" rows="3" placeholder="Property description" required></textarea></div>
 
             <div class="field-label">Installment Years</div>
             <div class="field-control"><input type="number" name="installment_years" min="0" placeholder="0"></div>
@@ -127,7 +130,10 @@
                 </button>
             </div>
             <div class="field-control multi-images-wrapper" id="multi-images-wrapper">
-                <input type="file" class="form-control mb-2" name="multiple_images[]" accept="image/*">
+                <div class="multi-image-input-group mb-2 d-flex align-items-center gap-2">
+                    <input type="file" class="form-control" name="multiple_images[]" accept="image/*">
+                    <button type="button" class="btn btn-sm btn-danger remove-image-btn"><i class="fas fa-minus"></i></button>
+                </div>
             </div>
 
             @if($canAssignOwner)
@@ -143,7 +149,7 @@
         </form>
     </div>
 
-    <!-- ====================.= RIGHT PANEL: Properties Table ===================== -->
+    <!-- ===================== RIGHT PANEL: Properties Table ===================== -->
     <div class="users-list-panel">
         <div class="users-list-header">
             <h2 class="panel-title mb-0">Property Lists</h2>
