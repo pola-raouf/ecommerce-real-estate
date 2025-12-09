@@ -146,20 +146,18 @@ class PropertyService
      */
     protected function storeImage(UploadedFile $file): string
     {
-        // $filename = time() . '_' . $file->getClientOriginalName();
-        // $path = $file->storeAs('properties', $filename, 'public');
-
-        // $storagePath = storage_path('app/public/properties/' . $filename);
-        // $publicPath = public_path('images/properties/' . $filename);
-
-        // if (!file_exists($publicPath)) {
-        //     copy($storagePath, $publicPath);
-        // }
-
-        // return 'images/properties/' . $filename;
         $filename = time() . '_' . $file->getClientOriginalName();
-        $file->storeAs('properties', $filename, 'public'); // storage/app/public/properties
-        return $filename; 
+        $path = $file->storeAs('properties', $filename, 'public');
+
+        $storagePath = storage_path('app/public/properties/' . $filename);
+        $publicPath = public_path('images/properties/' . $filename);
+
+        if (!file_exists($publicPath)) {
+            copy($storagePath, $publicPath);
+        }
+
+        return 'images/properties/' . $filename;
+       
     }
 
     /**
