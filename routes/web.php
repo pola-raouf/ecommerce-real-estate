@@ -46,7 +46,7 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login.form');
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 });
 
-Route::post('/check-email', [AuthController::class, 'checkEmail'])->name('check.email');
+Route::post('/check-email', [AuthController::class, 'emailExists'])->name('check.email');
 
 Route::get('/payment', function () {
     return view('properties.payment');
