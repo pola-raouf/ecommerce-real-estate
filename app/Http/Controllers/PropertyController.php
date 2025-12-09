@@ -72,13 +72,17 @@ class PropertyController extends Controller
         $query = Property::query();
 
         if ($request->filled('search_term')) {
-            $term = $request->search_term;
-            $query->where(function ($q) use ($term) {
-                $q->where('category', 'like', "%$term%")
-                  ->orWhere('location', 'like', "%$term%")
-                  ->orWhere('id', $term);
-            });
+    $term = $request->search_term;
+    $query->where(function ($q) use ($term) {
+        $q->where('category', 'like', "%$term%")
+          ->orWhere('location', 'like', "%$term%");
+          
+        // تحقق إن البحث عن رقم قبل المقارنة مع id
+        if (is_numeric($term)) {
+            $q->orWhere('id', $term);
         }
+    });
+}
 
         if ($request->filled('category')) $query->where('category', $request->category);
         if ($request->filled('location')) $query->where('location', $request->location);
