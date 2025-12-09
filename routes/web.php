@@ -35,6 +35,9 @@ Route::middleware(['auth', Role::class . ':seller,admin'])
     ->get('/dashboard/client-data', [DashboardController::class, 'getClientData'])
     ->name('dashboard.clientData');
 
+
+
+
 route::middleware('guest')->group(function(){
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register.form');
 Route::post('/register', [AuthController::class, 'register'])->name('register');
@@ -43,9 +46,7 @@ Route::get('/login', [AuthController::class, 'showlogin'])->name('login.form');
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 });
 
-Route::post('/email-exists', [AuthController::class, 'emailExists'])->name('email.exists');
-
-
+Route::post('/check-email', [AuthController::class, 'checkEmail'])->name('check.email');
 
 Route::get('/payment', function () {
     return view('properties.payment');
@@ -58,8 +59,6 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/delete-pic', [ProfileController::class, 'deletePic'])->name('profile.deletePic');
     Route::post('/profile/check-password', [ProfileController::class, 'checkPassword'])->name('profile.checkPassword');
-    Route::put('/profile/update-password', [ProfileController::class, 'updatePassword'])
-     ->name('profile.updatePassword');
 });
 
 Route::get('/users-management', [UserController::class, 'usersManagement'])->middleware(Role::class .':admin')->name('users-management');
@@ -70,34 +69,20 @@ Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.
 //Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
 
 
-Route::middleware(['auth'])->group(function () {
-    Route::resource('properties', PropertyController::class)
-        ->except(['edit', 'update', 'destroy']); 
-});
+Route::resource('properties', PropertyController::class)->except(['edit', 'update', 'destroy']); 
 
 Route::get('/properties', [PropertyController::class, 'index'])->name('properties.index');
-Route::get('/properties/create', [PropertyController::class, 'create'])->name('properties.create');
-Route::post('/properties', [PropertyController::class, 'store'])->name('properties.store');
 Route::middleware(['auth'])->group(function () {
 Route::get('/properties/{property}', [PropertyController::class, 'show'])->name('properties.show');
-
-Route::get('/properties/{property}/edit', [PropertyController::class, 'edit'])->name('properties.edit');
-Route::put('/properties/{property}', [PropertyController::class, 'update'])->name('properties.update');
-Route::delete('/properties/{property}', [PropertyController::class, 'destroy'])->name('properties.destroy');
 });
-// Reservations
-// web.php
-Route::middleware('auth')->group(function () {
-    Route::post('/properties/{property}/reserve', [PropertyController::class, 'reserve'])->name('properties.reserve');
-    Route::delete('/properties/{property}/reservation', [PropertyController::class, 'cancelReservation'])->name('properties.cancelReservation');
-});
+Route::get('/property-details', function() {
+    return view('properties.property-details');
+})->name('property-details');
 
-
-    Route::get('/properties/json', [PropertyController::class, 'json'])->name('properties.json');
-
-    Route::get('/property-management', [PropertyController::class, 'propertyManagement'])
-    ->name('property-management')
-    ->middleware(['auth', 'role:seller,admin']);
+Route::post('/properties/{property}/reserve', [PropertyController::class, 'reserve'])
+    ->name('properties.reserve');
+Route::delete('/properties/{property}/reservation', [PropertyController::class, 'cancelReservation'])
+    ->name('properties.cancelReservation');
 
 
 // Property management routes
@@ -119,7 +104,14 @@ Route::middleware(['auth',Role::class.':seller,admin'])->group(function () {
 
     // Delete property (AJAX or normal form)
     Route::delete('/properties/{property}', [PropertyController::class, 'destroy'])->name('properties.destroy');
+    
+    // Fetch property images (for edit modal)
+    Route::get('/properties/{property}/images', [PropertyController::class, 'images'])->name('properties.images');
+    
+    // Delete individual property image
+    Route::delete('/property-images/{propertyImage}', [PropertyController::class, 'deleteImage'])->name('property-images.destroy');
 });
+
 Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])
     ->name('password.request');
 
