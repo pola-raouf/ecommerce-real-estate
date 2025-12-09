@@ -1,4 +1,4 @@
-<!-- Edit Property Modall -->
+<!-- Edit Property Modal -->
 <div id="edit-property-container" class="modal-overlay" style="display:none;">
     <div class="modal">
         <div class="modal-header">
@@ -57,7 +57,14 @@
                     </button>
                 </div>
                 <div class="multi-images-wrapper" id="edit-multi-images-wrapper">
-                    <input type="file" class="form-control mb-2" name="multiple_images[]" accept="image/*">
+                    <div class="multi-image-input-group mb-2 d-flex align-items-center gap-2">
+                        <input type="file" class="form-control" name="multiple_images[]" accept="image/*">
+                        <button type="button" class="btn btn-sm btn-danger remove-image-btn"><i class="fas fa-minus"></i></button>
+                    </div>
+                </div>
+                <div class="existing-images-wrapper mt-3" id="edit-existing-images-wrapper">
+                    <label class="mb-2">Existing Images:</label>
+                    <div class="existing-images-list" id="edit-existing-images-list"></div>
                 </div>
             </div>
             @auth
@@ -75,4 +82,3 @@
         </form>
     </div>
 </div>
-
