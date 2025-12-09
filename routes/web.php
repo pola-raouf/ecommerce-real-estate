@@ -35,18 +35,17 @@ Route::middleware(['auth', Role::class . ':seller,admin'])
     ->get('/dashboard/client-data', [DashboardController::class, 'getClientData'])
     ->name('dashboard.clientData');
 
-
-
-
 route::middleware('guest')->group(function(){
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register.form');
 Route::post('/register', [AuthController::class, 'register'])->name('register');
 
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login.form');
+Route::get('/login', [AuthController::class, 'showlogin'])->name('login.form');
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 });
 
-Route::post('/check-email', [AuthController::class, 'checkEmail'])->name('check.email');
+Route::post('/email-exists', [AuthController::class, 'emailExists'])->name('email.exists');
+
+
 
 Route::get('/payment', function () {
     return view('properties.payment');
@@ -59,6 +58,8 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/delete-pic', [ProfileController::class, 'deletePic'])->name('profile.deletePic');
     Route::post('/profile/check-password', [ProfileController::class, 'checkPassword'])->name('profile.checkPassword');
+    Route::put('/profile/update-password', [ProfileController::class, 'updatePassword'])
+     ->name('profile.updatePassword');
 });
 
 Route::get('/users-management', [UserController::class, 'usersManagement'])->middleware(Role::class .':admin')->name('users-management');
@@ -67,7 +68,6 @@ Route::post('/users', [UserController::class, 'store'])->name('users.store');
 Route::get('/users/search', [UserController::class, 'search'])->name('users.search');
 Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 //Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
-
 
 Route::resource('properties', PropertyController::class)->except(['edit', 'update', 'destroy']); 
 
@@ -83,9 +83,6 @@ Route::post('/properties/{property}/reserve', [PropertyController::class, 'reser
     ->name('properties.reserve');
 Route::delete('/properties/{property}/reservation', [PropertyController::class, 'cancelReservation'])
     ->name('properties.cancelReservation');
-
-
-// Property management routes
 
 
 Route::middleware(['auth',Role::class.':seller,admin'])->group(function () {
@@ -111,7 +108,6 @@ Route::middleware(['auth',Role::class.':seller,admin'])->group(function () {
     // Delete individual property image
     Route::delete('/property-images/{propertyImage}', [PropertyController::class, 'deleteImage'])->name('property-images.destroy');
 });
-
 Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])
     ->name('password.request');
 
