@@ -4,24 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Property Details - EL Kayan</title>
-
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
-    <!-- cCustom CSS -->
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ asset('css/properties-details.css') }}">
 </head>
-
 @php
-    $reservation = $property->reservation;
-    $isSold = $property->status === 'sold';
-    $isReservedByOther = $reservation && $reservation->user_id !== Auth::id();
-    $canReserve = Auth::check() && !$reservation && !$isSold;
-    $canCancel = Auth::check() && $reservation && $reservation->user_id === Auth::id();
+    $reservation = $reservation ?? $property->reservation;
+    $canReserve = $canReserve ?? false;
+    $canCancel = $canCancel ?? false;
+    $isPending = $isPending ?? false;
+    $isSold = $isSold ?? ($property->status === 'sold');
 @endphp
 
 <body>
+
+<!-- ================= NAVBAR ================= -->
 <nav id="mainNavbar" class="navbar navbar-expand-lg navbar-dark fixed-top">
     <div class="container">
         <a class="navbar-brand fw-bold fs-4 text-black" href="{{ url('/') }}">
@@ -61,8 +62,9 @@
     </div>
 </nav>
 
-<div class="container property-details-container mt-5">
-
+<!-- ================= PAGE CONTENT ================= -->
+<div class="container property-details-container">
+    
     <a href="{{ route('properties.index') }}" class="back-button">
         <i class="bi bi-arrow-left"></i> Back to Listings
     </a>
@@ -70,196 +72,267 @@
     <h1 class="property-title">{{ $property->title ?? $property->category ?? 'Property Details' }}</h1>
 
     <div class="row g-4">
-        {{-- Images --}}
-        <div class="col-lg-7">
+        {{-- Multiple Images --}}
+        <div class="col-lg-7 order-1">
             <div class="property-images-card">
                 <h2><i class="bi bi-images me-2"></i>Property Images</h2>
                 <div class="property-image-grid">
                     @if($property->images && $property->images->count() > 0)
                         @foreach($property->images as $index => $image)
-                            <div class="property-image-item">
-                                <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal"
-                                   data-bs-image-url="{{ asset($image->image_path) }}">
-                                    <img src="{{ asset($image->image_path) }}" alt="Property Image">
-                                </a>
+                            <div class="property-image-item" data-image-index="{{ $index }}">
+                                <img src="{{ asset($image->image_path) }}"
+                                     alt="Property Image {{ $index + 1 }}"
+                                     class="property-thumbnail">
+                                <div class="image-overlay">
+                                    <button class="btn-view-image" data-image-url="{{ asset($image->image_path) }}" data-image-index="{{ $index }}">
+                                        <i class="bi bi-zoom-in"></i>
+                                    </button>
+                                </div>
                             </div>
                         @endforeach
                     @elseif($property->image)
-                        <div class="property-image-item">
-                            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal"
-                               data-bs-image-url="{{ asset($property->image) }}">
-                                <img src="{{ asset($property->image) }}" alt="Property Image">
-                            </a>
+                        <div class="property-image-item" data-image-index="0">
+                            <img src="{{ asset($property->image) }}"
+                                 alt="Property Image"
+                                 class="property-thumbnail">
+                            <div class="image-overlay">
+                                <button class="btn-view-image" data-image-url="{{ asset($property->image) }}" data-image-index="0">
+                                    <i class="bi bi-zoom-in"></i>
+                                </button>
+                            </div>
                         </div>
                     @else
-                        <div class="no-images text-center">
+                        <div class="no-images">
                             <i class="bi bi-image fs-1 d-block mb-3"></i>
                             <p>No images available for this property.</p>
                         </div>
                     @endif
                 </div>
             </div>
+            
+            {{-- Description - appears after images on mobile --}}
+            @if($property->description)
+            <div class="description-card mt-4 order-2 d-lg-none">
+                <h2><i class="bi bi-file-text me-2"></i>Description</h2>
+                <p>{!! nl2br(e($property->description)) !!}</p>
+            </div>
+            @endif
         </div>
 
-        {{-- Payment / Reservation --}}
-        <div class="col-lg-5">
+        {{-- Payment / Info --}}
+        <div class="col-lg-5 order-3">
             <div class="payment-card">
                 <div class="payment-card-header">
-                    <h2><i class="bi bi-credit-card me-2"></i>Reservation</h2>
+                    <h2><i class="bi bi-credit-card me-2"></i>Payment Options</h2>
                 </div>
                 <div class="payment-card-body">
-                    @auth
-    @if($property->status === 'available' && !$reservation)
-        <button type="button" class="reserve-btn" data-property-id="{{ $property->id }}"> 
-            <i class="bi bi-check-circle me-2"></i>Reserve this Property
-        </button>
-    @elseif($property->status === 'pending')
-        <button type="button" class="reserve-btn pending" disabled>
-            <i class="bi bi-hourglass-split me-2"></i>Pending
-        </button>
-    @elseif($canCancel)
-        <button type="button" class="reserve-btn cancel" data-property-id="{{ $property->id }}">
-            <i class="bi bi-x-circle me-2"></i>Cancel Reservation
-        </button>
-    @elseif($property->status === 'sold')
-        <button type="button" class="reserve-btn sold-out" disabled>
-            <i class="bi bi-x-circle me-2"></i>Sold Out
-        </button>
-    @endif
-@else
-    <a href="{{ route('login.form') }}" class="reserve-btn login-link">
-        <i class="bi bi-box-arrow-in-right me-2"></i>Login to reserve
-    </a>
-@endauth
+                    <div class="payment-info">
+                        @if($property->installment_years > 0)
+                            <p class="{{ $canReserve ? 'text-success' : ($isPending ? 'text-warning' : ($isSold ? 'text-danger' : 'text-muted')) }}">
+                                <strong>Installment Allowed:</strong>
+                                @if($canReserve)
+                                    Yes
+                                @elseif($isPending)
+                                    Pending Reservation
+                                @elseif($canCancel)
+                                    Reserved by you
+                                @else
+                                    Unavailable
+                                @endif
+                            </p>
+                            <p><strong>Period:</strong> {{ $property->installment_years }} Years</p>
+                        @else
+                            <p class="text-danger"><strong>Payment Type:</strong> Cash payment only</p>
+                        @endif
+                    </div>
 
+                    @auth
+                        @if($canReserve)
+                            <form action="{{ route('properties.reserve', $property->id) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="reserve-btn">
+                                    <i class="bi bi-check-circle me-2"></i>Reserve this Property
+                                </button>
+                            </form>
+                        @elseif($canCancel)
+                            <form action="{{ route('properties.cancelReservation', $property->id) }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="reserve-btn cancel">
+                                    <i class="bi bi-x-circle me-2"></i>Cancel Reservation
+                                </button>
+                            </form>
+                        @elseif($isPending)
+                            <button type="button" class="reserve-btn pending" disabled>
+                                <i class="bi bi-hourglass-split me-2"></i>Reserved
+                            </button>
+                        @else
+                            <button type="button" class="reserve-btn sold-out" disabled>
+                                <i class="bi bi-x-circle me-2"></i>Sold Out
+                            </button>
+                        @endif
+                    @else
+                        <a href="{{ route('login.form') }}" class="reserve-btn login-link">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Login to reserve
+                        </a>
+                    @endauth
+
+                    @if($isPending && !$canCancel && $reservation)
+                        <p class="text-warning mt-3 mb-0 small">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            This property is currently reserved by another user.
+                        </p>
+                    @endif
                 </div>
             </div>
 
-            {{-- Property Info --}}
-            <div class="payment-card mt-3">
-                <div class="payment-card-header">
+            {{-- Property Info Card --}}
+            <div class="payment-card">
+                <div class="payment-card-header" style="background: linear-gradient(135deg, rgba(13, 110, 253, 0.2) 0%, rgba(11, 94, 215, 0.2) 100%);">
                     <h2><i class="bi bi-info-circle me-2"></i>Property Information</h2>
                 </div>
                 <div class="payment-card-body">
                     @if($property->location)
-                        <p><strong><i class="bi bi-geo-alt me-2"></i>Location:</strong> {{ $property->location }}</p>
+                        <div class="payment-info">
+                            <p><strong><i class="bi bi-geo-alt me-2"></i>Location:</strong> {{ $property->location }}</p>
+                        </div>
                     @endif
                     @if($property->price)
-                        <p><strong><i class="bi bi-currency-dollar me-2"></i>Price:</strong> {{ number_format($property->price) }} EGP</p>
+                        <div class="payment-info">
+                            <p><strong><i class="bi bi-currency-dollar me-2"></i>Price:</strong> {{ number_format($property->price) }} EGP</p>
+                        </div>
                     @endif
                     @if($property->status)
-                        <p><strong><i class="bi bi-tag me-2"></i>Status:</strong> 
-                            <span class="badge bg-{{ $property->status === 'available' ? 'success' : ($property->status === 'sold' ? 'danger' : 'warning') }}">
-                                {{ ucfirst($property->status) }}
-                            </span>
-                        </p>
+                        <div class="payment-info">
+                            <p><strong><i class="bi bi-tag me-2"></i>Status:</strong> 
+                                <span class="badge bg-{{ $property->status === 'available' ? 'success' : ($property->status === 'sold' ? 'danger' : 'warning') }}">
+                                    {{ ucfirst($property->status) }}
+                                </span>
+                            </p>
+                        </div>
                     @endif
                     @if($property->transaction_type)
-                        <p><strong><i class="bi bi-arrow-left-right me-2"></i>Type:</strong> {{ ucfirst($property->transaction_type) }}</p>
+                        <div class="payment-info">
+                            <p><strong><i class="bi bi-arrow-left-right me-2"></i>Type:</strong> {{ ucfirst($property->transaction_type) }}</p>
+                        </div>
                     @endif
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Description --}}
+    {{-- Description - hidden on mobile (shown above), visible on desktop --}}
     @if($property->description)
-        <div class="description-card mt-4">
-            <h2><i class="bi bi-file-text me-2"></i>Description</h2>
-            <p>{!! nl2br(e($property->description)) !!}</p>
-        </div>
+    <div class="description-card mt-4 order-4 d-none d-lg-block">
+        <h2><i class="bi bi-file-text me-2"></i>Description</h2>
+        <p>{!! nl2br(e($property->description)) !!}</p>
+    </div>
     @endif
 
 </div>
 
-{{-- IMAGE VIEWER MODAL --}}
-<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Property Image</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body text-center">
-                <img src="" class="img-fluid" id="modalImage">
-            </div>
-        </div>
+{{-- FULL SCREEN IMAGE VIEWER --}}
+<div id="fullscreen-image-viewer" class="fullscreen-image-viewer">
+    <div class="viewer-header">
+        <span class="image-counter" id="image-counter">1 / 1</span>
+        <button class="btn-close-viewer" id="close-viewer">
+            <i class="bi bi-x-lg"></i>
+        </button>
     </div>
+    <button class="viewer-nav-btn viewer-nav-prev" id="prev-image-btn">
+        <i class="bi bi-chevron-left"></i>
+    </button>
+    <div class="viewer-content">
+        <img id="viewer-image" src="" alt="Property Image">
+    </div>
+    <button class="viewer-nav-btn viewer-nav-next" id="next-image-btn">
+        <i class="bi bi-chevron-right"></i>
+    </button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-{{-- Robust AJAX Reservation --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const csrfToken = '{{ csrf_token() }}';
+    const viewer = document.getElementById('fullscreen-image-viewer');
+    const viewerImage = document.getElementById('viewer-image');
+    const closeBtn = document.getElementById('close-viewer');
+    const prevBtn = document.getElementById('prev-image-btn');
+    const nextBtn = document.getElementById('next-image-btn');
+    const counter = document.getElementById('image-counter');
 
-    function updateButtonAndBadge(button, newStatus) {
-        const badge = document.querySelector('.payment-card-body .badge');
-        if(badge) {
-            badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-            badge.className = 'badge bg-' + (newStatus === 'available' ? 'success' : (newStatus === 'sold' ? 'danger' : 'warning'));
-        }
+    let currentIndex = 0;
+    let allImages = [];
 
-        if(newStatus === 'reserved') {
-            button.classList.add('cancel');
-            button.textContent = 'Cancel Reservation';
-        } else if(newStatus === 'available') {
-            button.classList.remove('cancel');
-            button.textContent = 'Reserve this Property';
-        }
-    }
+    // Collect all images (primary first, then gallery)
+    @if($property->image)
+        allImages.push('{{ asset($property->image) }}');
+    @endif
+    @if($property->images && $property->images->count() > 0)
+        @foreach($property->images as $index => $image)
+            allImages.push('{{ asset($image->image_path) }}');
+        @endforeach
+    @endif
 
-    async function handleReservation(button, method) {
-        const propertyId = button.dataset.propertyId;
-        if(!propertyId) return;
-
-        button.disabled = true;
-        button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
-
-        const url = method === 'POST' ? `/properties/${propertyId}/reserve` : `/properties/${propertyId}/reservation`;
-
-        try {
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-
-            const data = await response.json();
-
-            if(response.ok) {
-                updateButtonAndBadge(button, method === 'POST' ? 'reserved' : 'available');
-            } else {
-                alert(data.message || 'Something went wrong!');
-            }
-        } catch(err) {
-            console.error(err);
-            alert('Something went wrong!');
-        } finally {
-            button.disabled = false;
-        }
-    }
-
-    document.querySelectorAll('.reserve-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            if(button.classList.contains('cancel')) {
-                handleReservation(button, 'DELETE');
-            } else {
-                handleReservation(button, 'POST');
-            }
+    // Open viewer
+    document.querySelectorAll('.btn-view-image').forEach((btn, index) => {
+        btn.addEventListener('click', function() {
+            currentIndex = parseInt(this.getAttribute('data-image-index'));
+            openViewer();
         });
     });
 
-    // Image modal
-    const imageModal = document.getElementById('imageModal');
-    imageModal.addEventListener('show.bs.modal', function(event) {
-        const button = event.relatedTarget;
-        const imageUrl = button.getAttribute('data-bs-image-url');
-        const modalImage = imageModal.querySelector('#modalImage');
-        modalImage.src = imageUrl;
+    function openViewer() {
+        viewer.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        updateImage();
+    }
+
+    function closeViewer() {
+        viewer.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function updateImage() {
+        if (allImages.length === 0) return;
+        
+        viewerImage.src = allImages[currentIndex];
+        counter.textContent = `${currentIndex + 1} / ${allImages.length}`;
+        
+        prevBtn.style.display = currentIndex === 0 ? 'none' : 'flex';
+        nextBtn.style.display = currentIndex === allImages.length - 1 ? 'none' : 'flex';
+    }
+
+    function nextImage() {
+        if (currentIndex < allImages.length - 1) {
+            currentIndex++;
+            updateImage();
+        }
+    }
+
+    function prevImage() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            updateImage();
+        }
+    }
+
+    // Event listeners
+    closeBtn.addEventListener('click', closeViewer);
+    prevBtn.addEventListener('click', prevImage);
+    nextBtn.addEventListener('click', nextImage);
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (!viewer.classList.contains('active')) return;
+        
+        if (e.key === 'Escape') closeViewer();
+        if (e.key === 'ArrowLeft') prevImage();
+        if (e.key === 'ArrowRight') nextImage();
+    });
+
+    // Close on background click
+    viewer.addEventListener('click', function(e) {
+        if (e.target === viewer) closeViewer();
     });
 });
 </script>
