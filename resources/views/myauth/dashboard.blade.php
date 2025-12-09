@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Bootstrap CSsS -->
+  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
@@ -187,11 +187,6 @@
     <div class="chart">
       <h3 class="chart-title">Property Types</h3>
       <canvas class="canvas" id="pieChart"></canvas>
-      @if(auth()->user()->role === 'admin')
-        <div class="actions">
-          <button class="btn" id="randomizeBtn">Randomize Data</button>
-        </div>
-      @endif
     </div>
   </section>
 </div>
