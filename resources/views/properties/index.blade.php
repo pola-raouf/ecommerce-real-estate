@@ -146,12 +146,8 @@
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="properties-list">
         @forelse($properties as $property)
             @php
-                <!-- $imagePath = $property->image && file_exists(public_path($property->image))
+                $imagePath = $property->image && file_exists(public_path($property->image))
                     ? asset($property->image)
-                    : asset('images/properties/placeholder.jpg'); -->
-        
-                    $imagePath = $property->image 
-                    ? asset('storage/properties/' . $property->image)
                     : asset('images/properties/placeholder.jpg');
 
             @endphp
