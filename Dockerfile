@@ -31,6 +31,11 @@ RUN composer install --no-dev --optimize-autoloader
 # Set permissions
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
+RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+
+# Symlink storage
+RUN php artisan storage:link || true
+
 # Expose port
 EXPOSE 8000
 
