@@ -146,3 +146,8 @@ Route::get('/check-users-table', function () {
         return "Users table does NOT exist";
     }
 });
+Route::middleware(['auth'])->group(function () {
+    // باقي الـ routes بتاعت profile
+    Route::put('/profile/update-password', [ProfileController::class, 'updatePassword'])
+        ->name('profile.updatePassword');
+});
