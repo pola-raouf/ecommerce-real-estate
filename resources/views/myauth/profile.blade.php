@@ -206,5 +206,6 @@
     window.profileCheckPasswordRoute = '{{ route("profile.checkPassword") }}';
 </script>
 <script src="{{ asset('js/profile.js') }}"></script>
+<script src="{{ asset('js/button-loader.js') }}"></script>
 </body>
 </html>
