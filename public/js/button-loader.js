@@ -50,7 +50,8 @@ document.addEventListener('DOMContentLoaded', function() {
         'add-user-form': { text: 'Adding User...', icon: 'fa-plus' },
         'edit-user-form': { text: 'Updating...', icon: 'fa-save' },
         'edit-property-form': { text: 'Updating...', icon: 'fa-save' },
-        'profile-form': { text: 'Saving Changes...', icon: 'fa-save' },
+        'profileForm': { text: 'Saving Changes...', icon: 'fa-save' },
+        'passwordForm': { text: 'Saving Changes...', icon: 'fa-save' },
         'default': { text: 'Processing...', icon: 'fa-spinner' }
     };
 
