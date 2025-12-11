@@ -3,12 +3,17 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * DEPRECATED: This mailable is no longer used.
+ * Use RentReservationConfirmation or SaleReservationConfirmation instead.
+ * 
+ * Kept for backward compatibility but should not be used in new code.
+ */
 class PropertyReserved extends Mailable
 {
     use Queueable, SerializesModels;
@@ -49,7 +54,7 @@ class PropertyReserved extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Property Reservation Confirmed',
+            subject: 'Property Reservation Confirmed [DEPRECATED]',
         );
     }
 
