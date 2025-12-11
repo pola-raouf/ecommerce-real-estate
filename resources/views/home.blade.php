@@ -11,6 +11,7 @@
 
     <!-- Custom Home CSS -->
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/footer.css') }}">
 </head>
 <body>
 
@@ -271,5 +272,7 @@
         }, 5000); // 5 seconds
     }
 </script>
+
+@include('includes.footer')
 </body>
 </html>
