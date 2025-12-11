@@ -25,14 +25,12 @@
 body {
     font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial,
         sans-serif;
-    background: linear-gradient(
-        135deg,
-        #f8f9fa 0%,
-        #e9ecef 25%,
-        #f1f3f5 50%,
-        #e9ecef 75%,
-        #f8f9fa 100%
-    );
+    background: linear-gradient(135deg,
+            #f8f9fa 0%,
+            #e9ecef 25%,
+            #f1f3f5 50%,
+            #e9ecef 75%,
+            #f8f9fa 100%);
     background-attachment: fixed;
     color: var(--text);
     margin: 0;
@@ -49,31 +47,24 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background: 
-        /* Subtle architectural grid pattern */ linear-gradient(
-            90deg,
+    background:
+        /* Subtle architectural grid pattern */
+        linear-gradient(90deg,
             rgba(0, 0, 0, 0.02) 1px,
-            transparent 1px
-        ),
+            transparent 1px),
         linear-gradient(180deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px),
         /* Soft geometric shapes suggesting buildings */
-            radial-gradient(
-                circle at 15% 20%,
-                rgba(13, 110, 253, 0.03) 0%,
-                transparent 50%
-            ),
-        radial-gradient(
-            circle at 85% 60%,
+        radial-gradient(circle at 15% 20%,
+            rgba(13, 110, 253, 0.03) 0%,
+            transparent 50%),
+        radial-gradient(circle at 85% 60%,
             rgba(59, 130, 246, 0.03) 0%,
-            transparent 50%
-        ),
-        radial-gradient(
-            circle at 50% 80%,
+            transparent 50%),
+        radial-gradient(circle at 50% 80%,
             rgba(99, 102, 241, 0.02) 0%,
-            transparent 50%
-        ),
+            transparent 50%),
         /* Base gradient */
-            linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #f1f3f5 100%);
+        linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #f1f3f5 100%);
     background-size: 60px 60px, 60px 60px, 400px 400px, 500px 500px, 450px 450px,
         100% 100%;
     background-position: 0 0, 0 0, 0 0, 100% 0, 50% 100%, 0 0;
@@ -90,20 +81,16 @@ body::after {
     width: 100%;
     height: 100%;
     /* Subtle diagonal lines suggesting architectural elements */
-    background-image: repeating-linear-gradient(
-            45deg,
+    background-image: repeating-linear-gradient(45deg,
             transparent,
             transparent 2px,
             rgba(13, 110, 253, 0.01) 2px,
-            rgba(13, 110, 253, 0.01) 4px
-        ),
-        repeating-linear-gradient(
-            -45deg,
+            rgba(13, 110, 253, 0.01) 4px),
+        repeating-linear-gradient(-45deg,
             transparent,
             transparent 2px,
             rgba(59, 130, 246, 0.01) 2px,
-            rgba(59, 130, 246, 0.01) 4px
-        );
+            rgba(59, 130, 246, 0.01) 4px);
     background-size: 100px 100px;
     z-index: 0;
     pointer-events: none;
@@ -155,18 +142,16 @@ body::after {
     letter-spacing: 0.01em;
 }
 
-.navbar-nav > .nav-item > .nav-link:not(.dropdown-toggle):hover {
-    background: linear-gradient(
-        135deg,
-        rgba(13, 110, 253, 0.12) 0%,
-        rgba(13, 110, 253, 0.08) 100%
-    );
+.navbar-nav>.nav-item>.nav-link:not(.dropdown-toggle):hover {
+    background: linear-gradient(135deg,
+            rgba(13, 110, 253, 0.12) 0%,
+            rgba(13, 110, 253, 0.08) 100%);
     color: #0d6efd !important;
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(13, 110, 253, 0.15);
 }
 
-.navbar-nav > .nav-item > .nav-link:not(.dropdown-toggle).active {
+.navbar-nav>.nav-item>.nav-link:not(.dropdown-toggle).active {
     background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
     color: #fff !important;
     box-shadow: 0 4px 12px rgba(13, 110, 253, 0.35),
@@ -261,11 +246,9 @@ body::after {
 }
 
 .dropdown-item:hover {
-    background: linear-gradient(
-        135deg,
-        rgba(13, 110, 253, 0.1) 0%,
-        rgba(13, 110, 253, 0.05) 100%
-    );
+    background: linear-gradient(135deg,
+            rgba(13, 110, 253, 0.1) 0%,
+            rgba(13, 110, 253, 0.05) 100%);
     color: #0d6efd;
     transform: translateX(4px);
 }
@@ -291,80 +274,201 @@ body::after {
 }
 
 /* =========================
-   FILTER CONTAINER
+   FILTER SIDEBAR - PROFESSIONAL
 ========================= */
-.filter-container {
-    position: relative;
-    top: 20px;
+.filter-sidebar {
+    position: sticky;
+    top: 90px;
     background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
     border-radius: var(--radius-lg);
-    padding: 2rem 2.5rem;
     border: 1px solid var(--border);
     box-shadow: var(--shadow-lg);
-    margin-bottom: 2rem;
+    overflow: hidden;
     transition: var(--transition);
 }
 
-.filter-container:hover {
+.filter-sidebar:hover {
     box-shadow: var(--shadow-xl);
 }
 
-.filter-container .form-label {
+/* Filter Header */
+.filter-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    color: #ffffff;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.filter-header h5 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+}
+
+.filter-header i {
+    font-size: 1.2rem;
+}
+
+/* Filter Body */
+.filter-body {
+    padding: 1.5rem;
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom Scrollbar for Filter Body */
+.filter-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filter-body::-webkit-scrollbar-track {
+    background: #f1f3f5;
+    border-radius: 10px;
+}
+
+.filter-body::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    border-radius: 10px;
+}
+
+.filter-body::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%);
+}
+
+/* Filter Group */
+.filter-group {
+    margin-bottom: 1.25rem;
+}
+
+.filter-group:last-child {
+    margin-bottom: 0;
+}
+
+.filter-group .form-label {
     font-weight: 600;
     color: #374151;
     font-size: 0.875rem;
     margin-bottom: 0.5rem;
     letter-spacing: 0.01em;
+    display: block;
 }
 
-.filter-container .form-select,
-.filter-container input {
-    font-size: 0.875rem;
+.filter-group .form-control,
+.filter-group .form-select {
+    border: 1.5px solid #e5e7eb;
     border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
     padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
     transition: var(--transition);
-    background: var(--surface);
+    background: #ffffff;
 }
 
-.filter-container .form-select:focus,
-.filter-container input:focus {
-    border-color: var(--primary-color);
+.filter-group .form-control:focus,
+.filter-group .form-select:focus {
+    border-color: #0d6efd;
     box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
     outline: none;
 }
 
-.filter-container .btn-primary {
+
+.filter-group .form-control::placeholder {
+    color: #9ca3af;
+    font-size: 0.85rem;
+}
+
+/* Filter Actions */
+.filter-actions {
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-top: 1px solid #e5e7eb;
+}
+
+.filter-actions .btn {
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-actions .btn i {
+    font-size: 1rem;
+}
+
+.filter-actions .btn-primary {
     background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
     border: none;
-    border-radius: var(--radius-sm);
-    padding: 0.625rem 1.5rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    transition: var(--transition);
     box-shadow: 0 3px 10px rgba(13, 110, 253, 0.3);
 }
 
-.filter-container .btn-primary:hover {
+.filter-actions .btn-primary:hover {
     background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%);
     transform: translateY(-2px);
     box-shadow: 0 6px 18px rgba(13, 110, 253, 0.4);
 }
 
-.filter-container .btn-secondary {
-    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-    border: none;
-    border-radius: var(--radius-sm);
-    padding: 0.625rem 1.5rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    transition: var(--transition);
+.filter-actions .btn-outline-secondary {
+    border: 1.5px solid #6c757d;
+    color: #6c757d;
+    background: transparent;
 }
 
-.filter-container .btn-secondary:hover {
-    background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
-    transform: translateY(-2px);
+.filter-actions .btn-outline-secondary:hover {
+    background: #6c757d;
+    color: #ffffff;
+    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+/* =========================
+   MOBILE FILTER TOGGLE BUTTON
+========================= */
+.filter-toggle-btn {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.filter-toggle-btn:hover {
+    background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(13, 110, 253, 0.4);
+}
+
+.filter-toggle-btn:active {
+    transform: translateY(0);
+}
+
+.filter-toggle-btn .toggle-icon {
+    transition: transform 0.3s ease;
+    margin-left: auto;
+    font-size: 1.1rem;
+}
+
+.filter-toggle-btn[aria-expanded="true"] .toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* Hide toggle button on desktop */
+@media (min-width: 992px) {
+    .filter-toggle-btn {
+        display: none !important;
+    }
 }
 
 /* =========================
@@ -487,24 +591,64 @@ body::after {
 /* =========================
    RESPONSIVE
 ========================= */
-@media (max-width: 992px) {
+
+/* Tablets and Below - Sidebar becomes collapsible */
+@media (max-width: 991px) {
+    .filter-sidebar {
+        position: relative;
+        top: 0;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .filter-sidebar.collapsing {
+        transition: height 0.35s ease;
+    }
+
+    .filter-body {
+        max-height: none;
+        overflow-y: visible;
+    }
+
     .container-fluid {
         padding: 1.5rem 1.5rem 2rem 1.5rem;
     }
-
-    .filter-container {
-        padding: 1.5rem;
-    }
 }
 
+/* Mobile Devices */
 @media (max-width: 768px) {
-    .container-fluid {
-        padding: 1rem 1rem 1.5rem 1rem;
+    .filter-sidebar {
+        border-radius: var(--radius-md);
+        margin-bottom: 1.25rem;
     }
 
-    .filter-container {
+    .filter-header {
+        padding: 1rem 1.25rem;
+    }
+
+    .filter-header h5 {
+        font-size: 1rem;
+    }
+
+    .filter-body {
         padding: 1.25rem;
-        top: 10px;
+    }
+
+    .filter-group {
+        margin-bottom: 1rem;
+    }
+
+    .filter-actions {
+        padding: 1rem 1.25rem;
+    }
+
+    .filter-actions .btn {
+        font-size: 0.875rem;
+        padding: 0.625rem 0.875rem;
+    }
+
+    .container-fluid {
+        padding: 1rem 1rem 1.5rem 1rem;
     }
 
     .card {
@@ -515,7 +659,8 @@ body::after {
         grid-template-columns: 1fr !important;
     }
 
-    .row-cols-lg-3 {
+    .row-cols-lg-3,
+    .row-cols-xl-3 {
         grid-template-columns: 1fr !important;
     }
 
