@@ -12,6 +12,7 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ asset('css/profile.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/footer.css') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 @php
@@ -81,8 +82,31 @@
     <div id="alert-container"></div>
 
     <div class="row g-4">
-        <!-- LEFT: Forms -->
-        <div class="col-lg-8">
+        <!-- Profile Picture - Order 1 on mobile, 2 on desktop -->
+        <div class="col-lg-4 order-1 order-lg-2">
+            <div class="card shadow-sm p-4 text-center profile-pic-card">
+                <h5 class="mb-4"><i class="bi bi-image me-2"></i>Profile Picture</h5>
+                <div class="profile-container mx-auto mb-3">
+                    <img id="previewImage" src="{{ $profileImageUrl }}" data-has-image="{{ $hasProfileImage }}" alt="Profile Picture" class="rounded-circle profile-img-large">
+                    <div class="profile-overlay">
+                        <i class="bi bi-camera-fill mb-1"></i>
+                        <span>Upload</span>
+                        <input id="profileInput" type="file" name="profile_image" accept="image/*">
+                    </div>
+                </div>
+                <div class="profile-picture-actions">
+                    <button type="button" id="savePhotoBtn" class="btn btn-primary btn-sm mb-2" style="display: none;">
+                        <i class="bi bi-check-circle me-1"></i>Save Photo
+                    </button>
+                    <div class="delete-btn-wrapper">
+                        <button type="button" class="btn btn-sm delete-btn"><i class="bi bi-trash me-1"></i>Remove Picture</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forms - Order 2 on mobile, 1 on desktop -->
+        <div class="col-lg-8 order-2 order-lg-1">
             <!-- ================= Personal Info Form ================= -->
             <div class="card shadow-sm p-4 mb-4">
                 <h5 class="mb-4"><i class="bi bi-person-circle me-2"></i>Personal Information</h5>
@@ -173,31 +197,11 @@
                 </form>
             </div>
         </div>
-
-        <!-- RIGHT: Profile Picture -->
-        <div class="col-lg-4">
-            <div class="card shadow-sm p-4 text-center">
-                <h5 class="mb-4"><i class="bi bi-image me-2"></i>Profile Picture</h5>
-                <div class="profile-container mx-auto mb-3">
-                    <img id="previewImage" src="{{ $profileImageUrl }}" data-has-image="{{ $hasProfileImage }}" alt="Profile Picture" class="rounded-circle profile-img-large">
-                    <div class="profile-overlay">
-                        <i class="bi bi-camera-fill mb-1"></i>
-                        <span>Upload</span>
-                        <input id="profileInput" type="file" name="profile_image" accept="image/*">
-                    </div>
-                </div>
-                <div class="profile-picture-actions">
-                    <button type="button" id="savePhotoBtn" class="btn btn-primary btn-sm mb-2" style="display: none;">
-                        <i class="bi bi-check-circle me-1"></i>Save Photo
-                    </button>
-                    <div class="delete-btn-wrapper">
-                        <button type="button" class="btn btn-sm delete-btn"><i class="bi bi-trash me-1"></i>Remove Picture</button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
+
+<!-- Professional Footer -->
+@include('includes.footer')
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
