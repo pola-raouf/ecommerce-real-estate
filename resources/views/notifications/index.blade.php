@@ -266,7 +266,7 @@
                                             </h6>
                                             
                                             {{-- Customer Info (for admins/owners) --}}
-                                            @if(isset($notification->data['user_name']) && auth()->user()->role === 'admin')
+                                            @if(isset($notification->data['user_name']) && in_array(auth()->user()->role, ['admin', 'seller']))
                                                 <div class="detail-item" style="margin-bottom: 8px;">
                                                     <i class="bi bi-person-fill"></i>
                                                     <span><strong>Customer:</strong> {{ $notification->data['user_name'] }}</span>
@@ -275,6 +275,12 @@
                                                     <div class="detail-item" style="margin-bottom: 8px;">
                                                         <i class="bi bi-envelope-fill"></i>
                                                         <span><strong>Email:</strong> {{ $notification->data['user_email'] }}</span>
+                                                    </div>
+                                                @endif
+                                                @if(isset($notification->data['user_phone']))
+                                                    <div class="detail-item" style="margin-bottom: 8px;">
+                                                        <i class="bi bi-telephone-fill"></i>
+                                                        <span><strong>Phone:</strong> {{ $notification->data['user_phone'] }}</span>
                                                     </div>
                                                 @endif
                                             @endif
