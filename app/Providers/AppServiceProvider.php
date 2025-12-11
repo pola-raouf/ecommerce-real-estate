@@ -27,5 +27,9 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
         Event::listen(Login::class, [SendLoginPopup::class, 'handle']);
+        
+        // Register observers
+        \App\Models\Property::observe(\App\Observers\PropertyObserver::class);
+        \App\Models\PropertyReservation::observe(\App\Observers\ReservationObserver::class);
     }
 }
