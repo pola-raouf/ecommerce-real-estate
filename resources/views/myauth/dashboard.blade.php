@@ -15,6 +15,7 @@
 
   <!-- Custom CSS -->
   <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/footer.css') }}">
   <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 
@@ -191,6 +192,8 @@
   </section>
 </div>
 
+@include('includes.footer')
+
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
@@ -203,6 +206,5 @@
     };
 </script>
 <script src="{{ asset('js/dashboard.js') }}"></script>
-
 </body>
 </html>
