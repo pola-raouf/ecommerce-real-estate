@@ -448,12 +448,13 @@ class PropertyController extends Controller
         return response()->json(['error' => 'Deletion failed'], 500);
     }
     }
-    public function reserve(Property $property)
+    public function reserve(Request $request, Property $property)
 {
     $logger = \App\Services\Logger::getInstance();
      try {
         $userId = auth()->id();
 
+    // Check if property is already reserved
     if ($property->isReserved()) {
         $logger->warning('Property reservation failed - already reserved', [
                 'property_id' => $property->id,
@@ -462,20 +463,60 @@ class PropertyController extends Controller
             return redirect()->back()->with('error', 'Property already reserved.');
     }
 
-    PropertyReservation::create([
-        'property_id' => $property->id,
-        'user_id' => auth()->id(),
-        'reserved_at' => now(),
-    ]);
+    // Validate based on property type
+    if ($property->transaction_type === 'rent') {
+        $validated = $request->validate([
+            'meeting_datetime' => 'required|date|after:now',
+            'start_date' => 'required|date|after:meeting_datetime',
+            'duration_value' => 'required|integer|min:1|max:100',
+            'duration_unit' => 'required|in:weeks,months,years',
+            'notes' => 'nullable|string|max:500',
+        ]);
+    } else {
+        // Sale property - simpler validation
+        $validated = $request->validate([
+            'meeting_datetime' => 'required|date|after:now',
+            'notes' => 'nullable|string|max:500',
+        ]);
+    }
 
+    // Create reservation with all data
+    $reservationData = [
+        'property_id' => $property->id,
+        'user_id' => $userId,
+        'reserved_at' => now(),
+        'meeting_datetime' => $validated['meeting_datetime'],
+        'notes' => $validated['notes'] ?? null,
+    ];
+
+    // Add rental-specific fields if applicable
+    if ($property->transaction_type === 'rent') {
+        $reservationData['start_date'] = $validated['start_date'];
+        $reservationData['duration_value'] = $validated['duration_value'];
+        $reservationData['duration_unit'] = $validated['duration_unit'];
+    }
+
+    // Create the reservation (Observer will automatically send emails)
+    PropertyReservation::create($reservationData);
+
+    // Update property status
     $property->update([
         'status' => 'reserved',
     ]);
+
 $logger->info('Property reserved successfully', [
             'property_id' => $property->id,
             'user_id' => $userId,
+            'transaction_type' => $property->transaction_type,
         ]);
-    return redirect()->back()->with('success', 'Property reserved successfully.');
+    return redirect()->back()->with('success', 'Property reserved successfully! Check your email for confirmation details.');
+    
+     } catch (\Illuminate\Validation\ValidationException $e) {
+        return redirect()->back()
+            ->withErrors($e->errors())
+            ->withInput()
+            ->with('error', 'Please check your reservation details and try again.');
+            
      } catch (\Exception $e) {
         $logger->error('Property reservation failed', [
             'property_id' => $property->id,
@@ -483,7 +524,7 @@ $logger->info('Property reserved successfully', [
             'error' => $e->getMessage(),
         ]);
 
-        return redirect()->back()->with('error', 'Failed to reserve property.');
+        return redirect()->back()->with('error', 'Failed to reserve property. Please try again.');
     }
 }
 public function cancelReservation(Property $property)
