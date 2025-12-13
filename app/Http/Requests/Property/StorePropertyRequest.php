@@ -19,13 +19,34 @@ class StorePropertyRequest extends FormRequest
             'location' => 'required|string|max:150',
             'price' => 'required|numeric|min:0',
             'status' => 'required|string|in:pending,available,sold,reserved',
-            'description' => 'required|string',
+            'description' => 'nullable|string',
             'transaction_type' => 'required|string|in:sale,rent',
             'installment_years' => 'nullable|integer|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'user_id' => 'nullable|exists:users,id',
-            'multiple_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'multiple_images' => 'nullable|array',
+            'multiple_images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        // Ensure description has a default value if empty
+        if (empty($this->description)) {
+            $this->merge([
+                'description' => '',
+            ]);
+        }
+
+        // Ensure image has a default value if not provided
+        if (!$this->hasFile('image')) {
+            $this->merge([
+                'image' => '',
+            ]);
+        }
     }
 }
 
