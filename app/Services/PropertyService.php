@@ -47,40 +47,51 @@ class PropertyService
     /**
      * Update an existing property
      */
-    public function updateProperty(Property $property, array $data, ?UploadedFile $image = null, ?array $multipleImages = null): Property
-{
-    // Only admin can change user_id
-    if (isset($data['user_id']) && auth()->user()->role !== 'admin') {
-        unset($data['user_id']);
+    public function updateProperty(Property $property, array $data, ?UploadedFile $image = null, ?array $multipleImages = null, ?array $deletedImages = null): Property
+    {
+        // Only admin can change user_id
+        if (isset($data['user_id']) && auth()->user()->role !== 'admin') {
+            unset($data['user_id']);
+        }
+
+        // Replace image if uploaded
+        if ($image) {
+            $this->deleteFile($property->image);
+            $data['image'] = $this->storeImage($image);
+        }
+
+        // Handle deleted images
+        if ($deletedImages && is_array($deletedImages)) {
+            foreach ($deletedImages as $imageId) {
+                $img = PropertyImage::find($imageId);
+                if ($img && $img->property_id === $property->id) {
+                    $this->deleteFile($img->image_path);
+                    $img->delete();
+                }
+            }
+        }
+
+        // Apply ALL data (including status)
+        $property->fill($data);
+        $property->save();
+
+        // Add more images
+        if ($multipleImages) {
+            $this->storeMultipleImages($property, $multipleImages);
+        }
+
+        // If marked sold → remove reservation
+        if (($data['status'] ?? null) === 'sold') {
+            $property->releaseReservation();
+        }
+
+        $this->logger->info('Property updated successfully', [
+            'property_id' => $property->id,
+            'user_id' => auth()->id(),
+        ]);
+
+        return $property->refresh();
     }
-
-    // Replace image if uploaded
-    if ($image) {
-        $this->deleteFile($property->image);
-        $data['image'] = $this->storeImage($image);
-    }
-
-    // Apply ALL data (including status)
-    $property->fill($data);
-    $property->save();
-
-    // Add more images
-    if ($multipleImages) {
-        $this->storeMultipleImages($property, $multipleImages);
-    }
-
-    // If marked sold → remove reservation
-    if (($data['status'] ?? null) === 'sold') {
-        $property->releaseReservation();
-    }
-
-    $this->logger->info('Property updated successfully', [
-        'property_id' => $property->id,
-        'user_id' => auth()->id(),
-    ]);
-
-    return $property->refresh();
-}
 
 
     /**
@@ -101,6 +112,162 @@ class PropertyService
             'property_id' => $property->id,
             'user_id' => auth()->id(),
         ]);
+    }
+
+    /**
+     * Delete individual property image
+     */
+    public function deletePropertyImage(PropertyImage $image): void
+    {
+        $this->deleteFile($image->image_path);
+        $image->delete();
+
+        $this->logger->info('Property image deleted successfully', [
+            'image_id' => $image->id,
+            'property_id' => $image->property_id,
+            'user_id' => auth()->id(),
+        ]);
+    }
+
+    /**
+     * Reserve a property
+     */
+    public function reserveProperty(Property $property, array $data): PropertyReservation
+    {
+        // Check if property is already reserved
+        if ($property->isReserved()) {
+            $this->logger->warning('Property reservation failed - already reserved', [
+                'property_id' => $property->id,
+                'user_id' => auth()->id(),
+            ]);
+            throw new \Exception('This property is already reserved.');
+        }
+
+        // Create reservation data
+        $reservationData = [
+            'property_id' => $property->id,
+            'user_id' => auth()->id(),
+            'reserved_at' => now(),
+            'meeting_datetime' => $data['meeting_datetime'],
+            'notes' => $data['notes'] ?? null,
+        ];
+
+        // Add rental-specific fields if applicable
+        if ($property->transaction_type === 'rent') {
+            $reservationData['start_date'] = $data['start_date'];
+            $reservationData['duration_value'] = $data['duration_value'];
+            $reservationData['duration_unit'] = $data['duration_unit'];
+        }
+
+        // Create the reservation (Observer will automatically send emails)
+        $reservation = PropertyReservation::create($reservationData);
+
+        // Update property status
+        $property->update(['status' => 'reserved']);
+
+        $this->logger->info('Property reserved successfully', [
+            'property_id' => $property->id,
+            'user_id' => auth()->id(),
+            'transaction_type' => $property->transaction_type,
+        ]);
+
+        return $reservation;
+    }
+
+    /**
+     * Cancel a property reservation
+     */
+    public function cancelReservation(Property $property): void
+    {
+        $reservation = $property->reservation;
+
+        if (!$reservation) {
+            throw new \Exception('No reservation found for this property.');
+        }
+
+        $user = auth()->user();
+        if ($reservation->user_id !== $user->id && $user->role !== 'admin') {
+            throw new \Exception('You are not allowed to cancel this reservation.');
+        }
+
+        $reservation->delete();
+        $property->update(['status' => 'available']);
+
+        $this->logger->info('Reservation cancelled successfully', [
+            'property_id' => $property->id,
+            'user_id' => $user->id,
+        ]);
+    }
+
+    /**
+     * Get properties for management page based on user role
+     */
+    public function getPropertiesForManagement($user)
+    {
+        $query = Property::query();
+
+        // If user is a seller, only show their properties
+        if ($user->role === 'seller') {
+            $query->where('user_id', $user->id);
+        }
+
+        return $query->orderByDesc('id')->get();
+    }
+
+    /**
+     * Get properties with filters for index page
+     */
+    public function getPropertiesWithFilters(array $filters)
+    {
+        $query = Property::query();
+
+        // Search term
+        if (!empty($filters['search_term'])) {
+            $term = $filters['search_term'];
+            $query->where(function ($q) use ($term) {
+                $q->where('category', 'like', "%$term%")
+                  ->orWhere('location', 'like', "%$term%");
+                  
+                // Check if search term is numeric for ID search
+                if (is_numeric($term)) {
+                    $q->orWhere('id', $term);
+                }
+            });
+        }
+
+        // Category filter
+        if (!empty($filters['category'])) {
+            $query->where('category', $filters['category']);
+        }
+
+        // Location filter
+        if (!empty($filters['location'])) {
+            $query->where('location', $filters['location']);
+        }
+
+        // Price range filters
+        if (!empty($filters['min_price'])) {
+            $query->where('price', '>=', $filters['min_price']);
+        }
+
+        if (!empty($filters['max_price'])) {
+            $query->where('price', '<=', $filters['max_price']);
+        }
+
+        // Transaction type filter
+        if (!empty($filters['transaction_type'])) {
+            $query->where('transaction_type', $filters['transaction_type']);
+        }
+
+        // Sorting
+        if (!empty($filters['sort_by'])) {
+            [$col, $dir] = explode(' ', $filters['sort_by']);
+            $query->orderBy($col, $dir);
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        return $query->get();
     }
 
     /**
