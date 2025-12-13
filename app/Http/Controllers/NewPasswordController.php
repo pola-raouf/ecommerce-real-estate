@@ -16,24 +16,28 @@ use App\Services\Logger;
 
 class NewPasswordController extends Controller
 {
+    protected Logger $logger;
+
+    public function __construct()
+    {
+        $this->logger = Logger::getInstance();
+    }
     /**
      * Display the password reset view.
      */
     public function create(Request $request): View
     {
-        $logger = Logger::getInstance();
-
         try {
-        $logger->info('Password reset page accessed', [
-            'email' => $request->email ?? null,
-            'accessed_by' => auth()->id() ?? null,
-        ]);
-    } catch (\Exception $e) {
-        $logger->error('Password reset page logging failed', [
-            'email' => $request->email ?? null,
-            'error' => $e->getMessage(),
-        ]);
-    }
+            $this->logger->info('Password reset page accessed', [
+                'email' => $request->email ?? null,
+                'accessed_by' => auth()->id() ?? null,
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Password reset page logging failed', [
+                'email' => $request->email ?? null,
+                'error' => $e->getMessage(),
+            ]);
+        }
         
         return view('myauth.reset-password', ['request' => $request]);
     }
