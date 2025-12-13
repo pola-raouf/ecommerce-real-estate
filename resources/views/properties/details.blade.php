@@ -11,6 +11,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
     <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ asset('css/navbar.css') }}">
     <link rel="stylesheet" href="{{ asset('css/properties-details.css') }}">
     <link rel="stylesheet" href="{{ asset('css/footer.css') }}">
 </head>
@@ -25,91 +26,68 @@
 <body>
 
     <!-- ================= NAVBAR ================= -->
-    <nav id="mainNavbar" class="navbar navbar-expand-lg navbar-dark fixed-top">
-        <div class="container">
-            <a class="navbar-brand fw-bold fs-4 text-black" href="{{ url('/') }}">
-                <i class="bi bi-building-fill me-1"></i> EL Kayan
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-lg-center">
-                    <li class="nav-item"><a class="nav-link fw-semibold {{ Request::is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">Home</a></li>
-                    <li class="nav-item"><a class="nav-link fw-semibold {{ Request::is('about-us') ? 'active' : '' }}"
-                            href="{{ route('about-us') }}">About Us</a></li>
-                    <li class="nav-item"><a class="nav-link fw-semibold {{ Request::is('properties') ? 'active' : '' }}"
-                            href="{{ route('properties.index') }}">Properties</a></li>
-                    @auth
-                        {{-- Notification Bell --}}
-                        <li class="nav-item dropdown position-relative">
-                            <a class="nav-link notification-bell" href="#" role="button"
-                                data-bs-toggle="dropdown" aria-expanded="false" id="notificationBell">
-                                <i class="bi bi-bell-fill"></i>
-                                <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end notification-dropdown-menu" style="width: 350px;">
-                                <li class="notification-dropdown-header">
-                                    <h6>Notifications</h6>
-                                    <small class="text-muted" id="notificationCount">0 new</small>
-                                </li>
-                                <div id="notificationList" style="max-height: 300px; overflow-y: auto;">
-                                    <li class="text-center py-3 text-muted">
-                                        <i class="bi bi-bell-slash"></i>
-                                        <p class="mb-0 small">No new notifications</p>
-                                    </li>
-                                </div>
-                                <li class="notification-dropdown-footer">
-                                    <a href="{{ route('notifications.index') }}">View All Notifications</a>
-                                </li>
-                            </ul>
-                        </li>
-                        
-                        {{-- Profile Dropdown --}}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button"
-                                data-bs-toggle="dropdown">
-                                <img src="{{ Auth::user()->profile_image_url }}" alt="{{ Auth::user()->name }}"
-                                    class="rounded-circle profile-img me-2">
-                                <span>{{ Auth::user()->name }}</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item d-flex align-items-center" href="{{ route('profile') }}"><i
-                                            class="bi bi-person-circle me-2"></i>Profile</a></li>
-                                <li>
-                                    <form method="POST" action="{{ route('logout') }}">
-                                        @csrf
-                                        <button type="submit" class="dropdown-item d-flex align-items-center"><i
-                                                class="bi bi-box-arrow-right me-2"></i>Logout</button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </li>
-                    @else
-                        <li class="nav-item"><a class="btn btn-custom btn-sm fw-bold ms-2"
-                                href="{{ route('login.form') }}"><i class="bi bi-box-arrow-in-right me-1"></i> Login</a>
-                        </li>
-                    @endauth
-                </ul>
-            </div>
-        </div>
-    </nav>
+    @include('includes.navbar', ['showNotifications' => true, 'showSettings' => false, 'showDashboard' => true])
 
     <!-- ================= PAGE CONTENT ================= -->
     <div class="container property-details-container">
-
         <a href="{{ route('properties.index') }}" class="back-button">
             <i class="bi bi-arrow-left"></i> Back to Listings
         </a>
 
-        <h1 class="property-title">{{ $property->title ?? $property->category ?? 'Property Details' }}</h1>
+        <div class="property-hero">
+            <div class="row align-items-center gy-3">
+                <div class="col-lg-8">
+                    <p class="eyebrow mb-2">{{ ucfirst($property->transaction_type ?? 'Property') }}</p>
+                    <h1 class="property-title mb-3">{{ $property->title ?? $property->category ?? 'Property Details' }}</h1>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        @if($property->location)
+                            <span class="meta-chip"><i class="bi bi-geo-alt me-1"></i>{{ $property->location }}</span>
+                        @endif
+                        @php
+                            $status = $property->status ?? 'available';
+                            $statusClass = $status === 'available' ? 'success' : ($status === 'sold' ? 'danger' : 'warning');
+                        @endphp
+                        <span class="meta-chip badge-soft-{{ $statusClass }}"><i class="bi bi-tag me-1"></i>{{ ucfirst($status) }}</span>
+                        <span class="meta-chip"><i class="bi bi-arrow-left-right me-1"></i>{{ ucfirst($property->transaction_type ?? 'listing') }}</span>
+                        @if(($property->installment_years ?? 0) > 0)
+                            <span class="meta-chip success"><i class="bi bi-credit-card-2-back me-1"></i>Installments: {{ $property->installment_years }} years</span>
+                        @else
+                            <span class="meta-chip neutral"><i class="bi bi-cash-coin me-1"></i>Cash only</span>
+                        @endif
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="price-block">
+                        <p class="price-label mb-1">Listed price</p>
+                        <div class="price-value mb-2">{{ $property->price ? number_format($property->price) . ' EGP' : 'Contact for price' }}</div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="pill-soft"><i class="bi bi-shield-check me-1"></i>Verified listing</span>
+                            @if($isSold)
+                                <span class="pill-soft danger"><i class="bi bi-x-circle me-1"></i>Sold out</span>
+                            @elseif($isPending)
+                                <span class="pill-soft warning"><i class="bi bi-hourglass-split me-1"></i>Reserved</span>
+                            @else
+                                <span class="pill-soft success"><i class="bi bi-check2-circle me-1"></i>Available</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="row g-4">
             {{-- Multiple Images --}}
             <div class="col-lg-7 order-1">
                 <div class="property-images-card">
-                    <h2><i class="bi bi-images me-2"></i>Property Images</h2>
+                    <div class="section-header">
+                        <div class="section-icon-wrapper">
+                            <i class="bi bi-images"></i>
+                        </div>
+                        <div>
+                            <h2 class="section-title">Property Gallery</h2>
+                            <p class="section-subtitle">{{ ($property->images && $property->images->count() > 0) ? $property->images->count() : ($property->image ? 1 : 0) }} {{ ($property->images && $property->images->count() > 0) ? 'photos' : 'photo' }} available</p>
+                        </div>
+                    </div>
                     <div class="property-image-grid">
                         @if($property->images && $property->images->count() > 0)
                             @foreach($property->images as $index => $image)
@@ -117,27 +95,38 @@
                                     <img src="{{ asset($image->image_path) }}" alt="Property Image {{ $index + 1 }}"
                                         class="property-thumbnail">
                                     <div class="image-overlay">
-                                        <button class="btn-view-image" data-image-url="{{ asset($image->image_path) }}"
-                                            data-image-index="{{ $index }}">
-                                            <i class="bi bi-zoom-in"></i>
-                                        </button>
+                                        <div class="overlay-content">
+                                            <button class="btn-view-image" data-image-url="{{ asset($image->image_path) }}"
+                                                data-image-index="{{ $index }}">
+                                                <i class="bi bi-zoom-in"></i>
+                                                <span class="btn-label">View</span>
+                                            </button>
+                                        </div>
                                     </div>
+                                    <div class="image-number">{{ $index + 1 }}</div>
                                 </div>
                             @endforeach
                         @elseif($property->image)
                             <div class="property-image-item" data-image-index="0">
                                 <img src="{{ asset($property->image) }}" alt="Property Image" class="property-thumbnail">
                                 <div class="image-overlay">
-                                    <button class="btn-view-image" data-image-url="{{ asset($property->image) }}"
-                                        data-image-index="0">
-                                        <i class="bi bi-zoom-in"></i>
-                                    </button>
+                                    <div class="overlay-content">
+                                        <button class="btn-view-image" data-image-url="{{ asset($property->image) }}"
+                                            data-image-index="0">
+                                            <i class="bi bi-zoom-in"></i>
+                                            <span class="btn-label">View</span>
+                                        </button>
+                                    </div>
                                 </div>
+                                <div class="image-number">1</div>
                             </div>
                         @else
                             <div class="no-images">
-                                <i class="bi bi-image fs-1 d-block mb-3"></i>
-                                <p>No images available for this property.</p>
+                                <div class="no-images-icon">
+                                    <i class="bi bi-image"></i>
+                                </div>
+                                <h3>No Images Available</h3>
+                                <p>Images for this property will be added soon.</p>
                             </div>
                         @endif
                     </div>
@@ -146,8 +135,18 @@
                 {{-- Description - appears after images on mobile --}}
                 @if($property->description)
                     <div class="description-card mt-4 order-2 d-lg-none">
-                        <h2><i class="bi bi-file-text me-2"></i>Description</h2>
-                        <p>{!! nl2br(e($property->description)) !!}</p>
+                        <div class="section-header">
+                            <div class="section-icon-wrapper description-icon">
+                                <i class="bi bi-file-text"></i>
+                            </div>
+                            <div>
+                                <h2 class="section-title">Property Description</h2>
+                                <p class="section-subtitle">Detailed information</p>
+                            </div>
+                        </div>
+                        <div class="description-content">
+                            <p>{!! nl2br(e($property->description)) !!}</p>
+                        </div>
                     </div>
                 @endif
             </div>
@@ -155,104 +154,182 @@
             {{-- Payment / Info --}}
             <div class="col-lg-5 order-3">
                 <div class="payment-card">
-                    <div class="payment-card-header">
-                        <h2><i class="bi bi-credit-card me-2"></i>Payment Options</h2>
+                    <div class="section-header">
+                        <div class="section-icon-wrapper payment-icon">
+                            <i class="bi bi-credit-card-2-front"></i>
+                        </div>
+                        <div>
+                            <h2 class="section-title">Payment & Reservation</h2>
+                            <p class="section-subtitle">Secure booking options</p>
+                        </div>
                     </div>
                     <div class="payment-card-body">
-                        <div class="payment-info">
+                        <div class="payment-details">
                             @if($property->installment_years > 0)
-                                <p
-                                    class="{{ $canReserve ? 'text-success' : ($isPending ? 'text-warning' : ($isSold ? 'text-danger' : 'text-muted')) }}">
-                                    <strong>Installment Allowed:</strong>
-                                    @if($canReserve)
-                                        Yes
-                                    @elseif($isPending)
-                                        Pending Reservation
-                                    @elseif($canCancel)
-                                        Reserved by you
-                                    @else
-                                        Unavailable
-                                    @endif
-                                </p>
-                                <p><strong>Period:</strong> {{ $property->installment_years }} Years</p>
+                                <div class="info-row">
+                                    <div class="info-label">
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                        <span>Installment Plan</span>
+                                    </div>
+                                    <div class="info-value">
+                                        <span class="badge-status {{ $canReserve ? 'available' : ($isPending ? 'pending' : ($isSold ? 'sold' : 'unavailable')) }}">
+                                            @if($canReserve)
+                                                Available
+                                            @elseif($isPending)
+                                                Pending
+                                            @elseif($canCancel)
+                                                Reserved by you
+                                            @else
+                                                Unavailable
+                                            @endif
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="info-row">
+                                    <div class="info-label">
+                                        <i class="bi bi-calendar-range"></i>
+                                        <span>Payment Period</span>
+                                    </div>
+                                    <div class="info-value">
+                                        <strong>{{ $property->installment_years }} Years</strong>
+                                    </div>
+                                </div>
                             @else
-                                <p class="text-danger"><strong>Payment Type:</strong> Cash payment only</p>
+                                <div class="info-row">
+                                    <div class="info-label">
+                                        <i class="bi bi-cash-coin text-primary"></i>
+                                        <span>Payment Method</span>
+                                    </div>
+                                    <div class="info-value">
+                                        <span class="badge-status neutral">Cash Only</span>
+                                    </div>
+                                </div>
                             @endif
                         </div>
 
-                        @auth
-                            @if($canReserve)
-                                <button type="button" class="reserve-btn" data-bs-toggle="modal" 
-                                        data-bs-target="#reservationModal">
-                                    <i class="bi bi-check-circle me-2"></i>Reserve this Property
-                                </button>
-                            @elseif($canCancel)
-                                <form action="{{ route('properties.cancelReservation', $property->id) }}" method="POST">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="reserve-btn cancel">
-                                        <i class="bi bi-x-circle me-2"></i>Cancel Reservation
+                        <div class="reservation-section">
+                            @auth
+                                @if($canReserve)
+                                    <button type="button" class="reserve-btn" data-bs-toggle="modal" 
+                                            data-bs-target="#reservationModal">
+                                        <i class="bi bi-check-circle"></i>
+                                        <span>Reserve this Property</span>
                                     </button>
-                                </form>
-                            @elseif($isPending)
-                                <button type="button" class="reserve-btn pending" disabled>
-                                    <i class="bi bi-hourglass-split me-2"></i>Reserved
-                                </button>
+                                @elseif($canCancel)
+                                    <form action="{{ route('properties.cancelReservation', $property->id) }}" method="POST">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="reserve-btn cancel">
+                                            <i class="bi bi-x-circle"></i>
+                                            <span>Cancel Reservation</span>
+                                        </button>
+                                    </form>
+                                @elseif($property->status === 'pending')
+                                    <button type="button" class="reserve-btn pending" disabled>
+                                        <i class="bi bi-hourglass-split"></i>
+                                        <span>Pending Approval</span>
+                                    </button>
+                                @elseif($isPending)
+                                    <button type="button" class="reserve-btn pending" disabled>
+                                        <i class="bi bi-hourglass-split"></i>
+                                        <span>Currently Reserved</span>
+                                    </button>
+                                @else
+                                    <button type="button" class="reserve-btn sold-out" disabled>
+                                        <i class="bi bi-x-circle"></i>
+                                        <span>Sold Out</span>
+                                    </button>
+                                @endif
                             @else
-                                <button type="button" class="reserve-btn sold-out" disabled>
-                                    <i class="bi bi-x-circle me-2"></i>Sold Out
-                                </button>
-                            @endif
-                        @else
-                            <a href="{{ route('login.form') }}" class="reserve-btn login-link">
-                                <i class="bi bi-box-arrow-in-right me-2"></i>Login to reserve
-                            </a>
-                        @endauth
+                                <a href="{{ route('login.form') }}" class="reserve-btn login-link">
+                                    <i class="bi bi-box-arrow-in-right"></i>
+                                    <span>Login to Reserve</span>
+                                </a>
+                            @endauth
 
-                        @if($isPending && !$canCancel && $reservation)
-                            <p class="text-warning mt-3 mb-0 small">
-                                <i class="bi bi-exclamation-triangle me-1"></i>
-                                This property is currently reserved by another user.
-                            </p>
-                        @endif
+                            @if($isPending && !$canCancel && $reservation)
+                                <div class="reservation-notice">
+                                    <i class="bi bi-info-circle"></i>
+                                    <span>This property is currently reserved by another user.</span>
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 </div>
 
                 {{-- Property Info Card --}}
-                <div class="payment-card">
-                    <div class="payment-card-header"
-                        style="background: linear-gradient(135deg, rgba(13, 110, 253, 0.2) 0%, rgba(11, 94, 215, 0.2) 100%);">
-                        <h2><i class="bi bi-info-circle me-2"></i>Property Information</h2>
+                <div class="payment-card info-card">
+                    <div class="section-header">
+                        <div class="section-icon-wrapper info-icon">
+                            <i class="bi bi-info-circle"></i>
+                        </div>
+                        <div>
+                            <h2 class="section-title">Property Details</h2>
+                            <p class="section-subtitle">Key information</p>
+                        </div>
                     </div>
                     <div class="payment-card-body">
-                        @if($property->location)
-                            <div class="payment-info">
-                                <p><strong><i class="bi bi-geo-alt me-2"></i>Location:</strong> {{ $property->location }}
-                                </p>
-                            </div>
-                        @endif
-                        @if($property->price)
-                            <div class="payment-info">
-                                <p><strong><i class="bi bi-currency-dollar me-2"></i>Price:</strong>
-                                    {{ number_format($property->price) }} EGP</p>
-                            </div>
-                        @endif
-                        @if($property->status)
-                            <div class="payment-info">
-                                <p><strong><i class="bi bi-tag me-2"></i>Status:</strong>
-                                    <span
-                                        class="badge bg-{{ $property->status === 'available' ? 'success' : ($property->status === 'sold' ? 'danger' : 'warning') }}">
-                                        {{ ucfirst($property->status) }}
-                                    </span>
-                                </p>
-                            </div>
-                        @endif
-                        @if($property->transaction_type)
-                            <div class="payment-info">
-                                <p><strong><i class="bi bi-arrow-left-right me-2"></i>Type:</strong>
-                                    {{ ucfirst($property->transaction_type) }}</p>
-                            </div>
-                        @endif
+                        <div class="info-list">
+                            @if($property->location)
+                                <div class="info-item">
+                                    <div class="info-icon-wrapper">
+                                        <i class="bi bi-geo-alt-fill"></i>
+                                    </div>
+                                    <div class="info-content">
+                                        <span class="info-label">Location</span>
+                                        <span class="info-value">{{ $property->location }}</span>
+                                    </div>
+                                </div>
+                            @endif
+                            @if($property->price)
+                                <div class="info-item">
+                                    <div class="info-icon-wrapper">
+                                        <i class="bi bi-currency-dollar"></i>
+                                    </div>
+                                    <div class="info-content">
+                                        <span class="info-label">Price</span>
+                                        <span class="info-value price-value">{{ number_format($property->price) }} EGP</span>
+                                    </div>
+                                </div>
+                            @endif
+                            @if($property->status)
+                                <div class="info-item">
+                                    <div class="info-icon-wrapper">
+                                        <i class="bi bi-tag-fill"></i>
+                                    </div>
+                                    <div class="info-content">
+                                        <span class="info-label">Status</span>
+                                        <span class="info-value">
+                                            <span class="status-badge status-{{ $property->status }}">
+                                                {{ ucfirst($property->status) }}
+                                            </span>
+                                        </span>
+                                    </div>
+                                </div>
+                            @endif
+                            @if($property->transaction_type)
+                                <div class="info-item">
+                                    <div class="info-icon-wrapper">
+                                        <i class="bi bi-arrow-left-right"></i>
+                                    </div>
+                                    <div class="info-content">
+                                        <span class="info-label">Transaction Type</span>
+                                        <span class="info-value">{{ ucfirst($property->transaction_type) }}</span>
+                                    </div>
+                                </div>
+                            @endif
+                            @if($property->category)
+                                <div class="info-item">
+                                    <div class="info-icon-wrapper">
+                                        <i class="bi bi-building"></i>
+                                    </div>
+                                    <div class="info-content">
+                                        <span class="info-label">Category</span>
+                                        <span class="info-value">{{ ucfirst($property->category) }}</span>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -261,8 +338,18 @@
         {{-- Description - hidden on mobile (shown above), visible on desktop --}}
         @if($property->description)
             <div class="description-card mt-4 order-4 d-none d-lg-block">
-                <h2><i class="bi bi-file-text me-2"></i>Description</h2>
-                <p>{!! nl2br(e($property->description)) !!}</p>
+                <div class="section-header">
+                    <div class="section-icon-wrapper description-icon">
+                        <i class="bi bi-file-text"></i>
+                    </div>
+                    <div>
+                        <h2 class="section-title">Property Description</h2>
+                        <p class="section-subtitle">Detailed information about this property</p>
+                    </div>
+                </div>
+                <div class="description-content">
+                    <p>{!! nl2br(e($property->description)) !!}</p>
+                </div>
             </div>
         @endif
 
@@ -272,139 +359,185 @@
     @auth
     <div class="modal fade" id="reservationModal" tabindex="-1" aria-labelledby="reservationModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                    <h5 class="modal-title" id="reservationModalLabel">
-                        <i class="bi bi-calendar-check me-2"></i>Reserve {{ $property->category }}
-                    </h5>
+            <div class="modal-content reservation-modal-content">
+                <div class="reservation-modal-header">
+                    <div class="modal-header-content">
+                        <div class="modal-icon-wrapper">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title" id="reservationModalLabel">Reserve Property</h5>
+                            <p class="modal-subtitle">{{ $property->category ?? 'Property' }}</p>
+                        </div>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 
                 <form action="{{ route('properties.reserve', $property->id) }}" method="POST">
                     @csrf
-                    <div class="modal-body" style="padding: 30px;">
+                    <div class="reservation-modal-body">
                         @if($errors->any())
-                            <div class="alert alert-danger">
-                                <ul class="mb-0">
-                                    @foreach($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
+                            <div class="alert alert-danger reservation-alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <div>
+                                    <strong>Please fix the following errors:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        @foreach($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
                             </div>
                         @endif
                         
-                        <div class="mb-4">
-                            <h6 style="color: #667eea; font-weight: 600;">Property Details</h6>
-                            <p class="mb-1"><strong>Location:</strong> {{ $property->location }}</p>
-                            <p class="mb-1"><strong>Price:</strong> ${{ number_format($property->price, 2) }}</p>
-                            <p class="mb-0"><strong>Type:</strong> {{ ucfirst($property->transaction_type) }}</p>
+                        <div class="property-summary-card">
+                            <div class="summary-header">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <span>Property Summary</span>
+                            </div>
+                            <div class="summary-content">
+                                <div class="summary-item">
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                    <div>
+                                        <span class="summary-label">Location</span>
+                                        <span class="summary-value">{{ $property->location }}</span>
+                                    </div>
+                                </div>
+                                <div class="summary-item">
+                                    <i class="bi bi-currency-dollar"></i>
+                                    <div>
+                                        <span class="summary-label">Price</span>
+                                        <span class="summary-value">{{ number_format($property->price) }} EGP</span>
+                                    </div>
+                                </div>
+                                <div class="summary-item">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                    <div>
+                                        <span class="summary-label">Type</span>
+                                        <span class="summary-value">{{ ucfirst($property->transaction_type) }}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
-                        <hr>
-                        
-                        {{-- Meeting Date/Time (Required for both rent and sale) --}}
-                        <div class="mb-3">
-                            <label for="meeting_datetime" class="form-label">
-                                <i class="bi bi-calendar-event me-1"></i>Viewing Appointment *
-                            </label>
-                            <input type="datetime-local" 
-                                   class="form-control @error('meeting_datetime') is-invalid @enderror" 
-                                   id="meeting_datetime" 
-                                   name="meeting_datetime" 
-                                   value="{{ old('meeting_datetime') }}"
-                                   min="{{ now()->addDay()->format('Y-m-d\TH:i') }}"
-                                   required>
-                            <small class="text-muted">Select when you'd like to view the property</small>
-                            @error('meeting_datetime')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                        <div class="form-section">
+                            <div class="section-header">
+                                <i class="bi bi-calendar-event me-2"></i>
+                                <span>Appointment Details</span>
+                            </div>
+                            <div class="form-group-modern">
+                                <label for="meeting_datetime" class="form-label-modern">
+                                    <i class="bi bi-calendar-check me-1"></i>Viewing Appointment Date <span class="required">*</span>
+                                </label>
+                                <input type="date" 
+                                       class="form-control-modern @error('meeting_datetime') is-invalid @enderror" 
+                                       id="meeting_datetime" 
+                                       name="meeting_datetime" 
+                                       value="{{ old('meeting_datetime') }}"
+                                       min="{{ now()->addDay()->format('Y-m-d') }}"
+                                       required>
+                                <small class="form-help-text">Select the date you'd like to view the property</small>
+                                @error('meeting_datetime')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
                         
                         @if($property->transaction_type === 'rent')
-                            {{-- Rental-specific fields --}}
-                            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                                <h6 style="color: #667eea; font-weight: 600; margin-bottom: 15px;">
-                                    <i class="bi bi-house-door me-1"></i>Rental Details
-                                </h6>
+                            <div class="form-section rental-section">
+                                <div class="section-header">
+                                    <i class="bi bi-house-door me-2"></i>
+                                    <span>Rental Details</span>
+                                </div>
                                 
-                                <div class="mb-3">
-                                    <label for="start_date" class="form-label">
-                                        <i class="bi bi-calendar-check me-1"></i>Rental Start Date *
+                                <div class="form-group-modern">
+                                    <label for="start_date" class="form-label-modern">
+                                        <i class="bi bi-calendar-check me-1"></i>Rental Start Date <span class="required">*</span>
                                     </label>
                                     <input type="date" 
-                                           class="form-control @error('start_date') is-invalid @enderror" 
+                                           class="form-control-modern @error('start_date') is-invalid @enderror" 
                                            id="start_date" 
                                            name="start_date" 
                                            value="{{ old('start_date') }}"
                                            required>
-                                    <small class="text-muted">When do you want to start renting?</small>
+                                    <small class="form-help-text">When do you want to start renting?</small>
                                     @error('start_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
                                 
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="duration_value" class="form-label">
-                                            <i class="bi bi-hourglass-split me-1"></i>Duration *
-                                        </label>
-                                        <input type="number" 
-                                               class="form-control @error('duration_value') is-invalid @enderror" 
-                                               id="duration_value" 
-                                               name="duration_value" 
-                                               value="{{ old('duration_value', 6) }}"
-                                               min="1" 
-                                               max="100"
-                                               required>
-                                        @error('duration_value')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-group-modern">
+                                            <label for="duration_value" class="form-label-modern">
+                                                <i class="bi bi-hourglass-split me-1"></i>Duration <span class="required">*</span>
+                                            </label>
+                                            <input type="number" 
+                                                   class="form-control-modern @error('duration_value') is-invalid @enderror" 
+                                                   id="duration_value" 
+                                                   name="duration_value" 
+                                                   value="{{ old('duration_value', 6) }}"
+                                                   min="1" 
+                                                   max="100"
+                                                   required>
+                                            @error('duration_value')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
                                     </div>
                                     
-                                    <div class="col-md-6 mb-3">
-                                        <label for="duration_unit" class="form-label">Period</label>
-                                        <select class="form-select @error('duration_unit') is-invalid @enderror" 
-                                                id="duration_unit" 
-                                                name="duration_unit"
-                                                required>
-                                            <option value="weeks" {{ old('duration_unit') === 'weeks' ? 'selected' : '' }}>Weeks</option>
-                                            <option value="months" {{ old('duration_unit', 'months') === 'months' ? 'selected' : '' }}>Months</option>
-                                            <option value="years" {{ old('duration_unit') === 'years' ? 'selected' : '' }}>Years</option>
-                                        </select>
-                                        @error('duration_unit')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                    <div class="col-md-6">
+                                        <div class="form-group-modern">
+                                            <label for="duration_unit" class="form-label-modern">Period <span class="required">*</span></label>
+                                            <select class="form-control-modern form-select-modern @error('duration_unit') is-invalid @enderror" 
+                                                    id="duration_unit" 
+                                                    name="duration_unit"
+                                                    required>
+                                                <option value="weeks" {{ old('duration_unit') === 'weeks' ? 'selected' : '' }}>Weeks</option>
+                                                <option value="months" {{ old('duration_unit', 'months') === 'months' ? 'selected' : '' }}>Months</option>
+                                                <option value="years" {{ old('duration_unit') === 'years' ? 'selected' : '' }}>Years</option>
+                                            </select>
+                                            @error('duration_unit')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         @endif
                         
-                        {{-- Notes (Optional for both) --}}
-                        <div class="mb-3">
-                            <label for="notes" class="form-label">
-                                <i class="bi bi-chat-left-text me-1"></i>Additional Notes (Optional)
-                            </label>
-                            <textarea class="form-control @error('notes') is-invalid @enderror" 
-                                      id="notes" 
-                                      name="notes" 
-                                      rows="3" 
-                                      maxlength="500"
-                                      placeholder="Any special requests or questions?">{{ old('notes') }}</textarea>
-                            <small class="text-muted">Maximum 500 characters</small>
-                            @error('notes')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                        <div class="form-section">
+                            <div class="form-group-modern">
+                                <label for="notes" class="form-label-modern">
+                                    <i class="bi bi-chat-left-text me-1"></i>Additional Notes <span class="optional">(Optional)</span>
+                                </label>
+                                <textarea class="form-control-modern @error('notes') is-invalid @enderror" 
+                                          id="notes" 
+                                          name="notes" 
+                                          rows="4" 
+                                          maxlength="500"
+                                          placeholder="Any special requests or questions?">{{ old('notes') }}</textarea>
+                                <small class="form-help-text">Maximum 500 characters</small>
+                                @error('notes')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
                         
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle me-2"></i>
-                            <strong>Note:</strong> You'll receive a confirmation email with all the details after submitting this reservation.
+                        <div class="info-notice">
+                            <i class="bi bi-info-circle-fill"></i>
+                            <div>
+                                <strong>Confirmation Email</strong>
+                                <p class="mb-0">You'll receive a confirmation email with all the details after submitting this reservation.</p>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                    <div class="reservation-modal-footer">
+                        <button type="button" class="btn btn-cancel-modal" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-confirm-reservation">
                             <i class="bi bi-check-circle me-2"></i>Confirm Reservation
                         </button>
                     </div>
