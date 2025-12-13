@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/navbar.css') }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}">
     <link rel="stylesheet" href="{{ asset('css/footer.css') }}">
     
@@ -28,94 +28,7 @@
 <body>
     
     <!-- ================= NAVBAR ================= -->
-    <nav id="mainNavbar" class="navbar navbar-expand-lg navbar-dark fixed-top">
-        <div class="container">
-            <a class="navbar-brand fw-bold fs-4" href="{{ url('/') }}">
-                <i class="bi bi-building-fill me-1"></i> EL Kayan
-            </a>
-
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-lg-center">
-                    <li class="nav-item">
-                        <a class="nav-link fw-semibold {{ Request::is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link fw-semibold {{ Request::is('about-us') ? 'active' : '' }}"
-                            href="{{ route('about-us') }}">About Us</a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link fw-semibold {{ Request::is('properties') ? 'active' : '' }}"
-                            href="{{ route('properties.index') }}">Properties</a>
-                    </li>
-
-                    @auth
-                        @if(in_array(auth()->user()->role, ['admin', 'seller']))
-                            <li class="nav-item">
-                                <a class="nav-link fw-semibold {{ Request::is('dashboard') ? 'active' : '' }}"
-                                    href="{{ route('dashboard') }}">Dashboard</a>
-                            </li>
-                        @endif
-
-                        <!-- Notification Bell -->
-                        <li class="nav-item dropdown position-relative">
-                            <a class="nav-link notification-bell" href="#" role="button"
-                                data-bs-toggle="dropdown" aria-expanded="false" id="notificationBell">
-                                <i class="bi bi-bell-fill"></i>
-                                <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end notification-dropdown-menu" style="width: 350px;">
-                                <li class="notification-dropdown-header">
-                                    <h6>Notifications</h6>
-                                    <small class="text-muted" id="notificationCount">0 new</small>
-                                </li>
-                                <div id="notificationList" style="max-height: 300px; overflow-y: auto;">
-                                    <li class="text-center py-3 text-muted">
-                                        <i class="bi bi-bell-slash"></i>
-                                        <p class="mb-0 small">No new notifications</p>
-                                    </li>
-                                </div>
-                                <li class="notification-dropdown-footer">
-                                    <a href="{{ route('notifications.index') }}">View All Notifications</a>
-                                </li>
-                            </ul>
-                        </li>
-
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button"
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                                <img src="{{ Auth::user()->profile_image_url }}" alt="{{ Auth::user()->name }}"
-                                    class="rounded-circle profile-img me-2">
-                                <span>{{ Auth::user()->name }}</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item d-flex align-items-center" href="{{ route('profile') }}"><i
-                                            class="bi bi-person-circle me-2"></i>Profile</a></li>
-                                <li>
-                                    <form method="POST" action="{{ route('logout') }}">
-                                        @csrf
-                                        <button type="submit" class="dropdown-item d-flex align-items-center"><i
-                                                class="bi bi-box-arrow-right me-2"></i>Logout</button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </li>
-                    @else
-                        <li class="nav-item">
-                            <a class="btn btn-custom btn-sm fw-bold ms-2" href="{{ route('login.form') }}">
-                                <i class="bi bi-box-arrow-in-right me-1"></i> Login
-                            </a>
-                        </li>
-                    @endauth
-                </ul>
-            </div>
-        </div>
-    </nav>
+    @include('includes.navbar', ['showNotifications' => true, 'showSettings' => false, 'showDashboard' => true])
 
     <!-- Hero Section -->
     <div class="notifications-hero">
@@ -265,8 +178,8 @@
                                                 <i class="bi bi-calendar-check me-1"></i>Reservation Details
                                             </h6>
                                             
-                                            {{-- Customer Info (for admins/owners) --}}
-                                            @if(isset($notification->data['user_name']) && in_array(auth()->user()->role, ['admin', 'seller']))
+                                            {{-- Customer Info --}}
+                                            @if(isset($notification->data['user_name']))
                                                 <div class="detail-item" style="margin-bottom: 8px;">
                                                     <i class="bi bi-person-fill"></i>
                                                     <span><strong>Customer:</strong> {{ $notification->data['user_name'] }}</span>
@@ -401,77 +314,6 @@
                 });
             });
             
-            // Navbar scroll effect
-            const navbar = document.getElementById('mainNavbar');
-            window.addEventListener('scroll', () => {
-                if (window.scrollY > 50) {
-                    navbar.classList.add('navbar-scrolled');
-                } else {
-                    navbar.classList.remove('navbar-scrolled');
-                }
-            });
-            
-            // Notification system
-            @auth
-            function fetchNotifications() {
-                fetch('{{ route("notifications.recent") }}')
-                    .then(response => response.json())
-                    .then(data => {
-                        const badge = document.getElementById('notificationBadge');
-                        const count = document.getElementById('notificationCount');
-                        const list = document.getElementById('notificationList');
-                        
-                        // Update badge
-                        if (data.unread_count > 0) {
-                            badge.textContent = data.unread_count;
-                            badge.style.display = 'block';
-                            count.textContent = data.unread_count + ' new';
-                        } else {
-                            badge.style.display = 'none';
-                            count.textContent = '0 new';
-                        }
-                        
-                        // Update notification list
-                        if (data.notifications.length > 0) {
-                            list.innerHTML = '';
-                            data.notifications.forEach(notification => {
-                                const item = document.createElement('li');
-                                item.className = 'dropdown-item notification-dropdown-item' + (notification.read_at ? ' read' : ' unread');
-                                item.innerHTML = `
-                                    <div class="d-flex align-items-start">
-                                        <i class="bi bi-house-fill text-primary me-2 mt-1"></i>
-                                        <div class="flex-grow-1">
-                                            <div class="fw-semibold small">${notification.message}</div>
-                                            <small class="text-muted">${notification.created_at}</small>
-                                        </div>
-                                    </div>
-                                `;
-                                if (notification.property_id) {
-                                    item.style.cursor = 'pointer';
-                                    item.onclick = () => {
-                                        window.location.href = '/properties/' + notification.property_id;
-                                    };
-                                }
-                                list.appendChild(item);
-                            });
-                        } else {
-                            list.innerHTML = `
-                                <li class="text-center py-3 text-muted">
-                                    <i class="bi bi-bell-slash"></i>
-                                    <p class="mb-0 small">No new notifications</p>
-                                </li>
-                            `;
-                        }
-                    })
-                    .catch(error => console.error('Error fetching notifications:', error));
-            }
-            
-            // Fetch notifications on page load
-            fetchNotifications();
-            
-            // Refresh notifications every 30 seconds
-            setInterval(fetchNotifications, 30000);
-            @endauth
         });
     </script>
 </body>
