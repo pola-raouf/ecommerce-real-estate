@@ -7,6 +7,7 @@
     <title>Properties - EL Kayan</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/navbar.css') }}">
     <link rel="stylesheet" href="{{ asset('css/properties-index.css') }}">
     <link rel="stylesheet" href="{{ asset('css/footer.css') }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}">
@@ -15,94 +16,75 @@
 
 <body>
 
-    <!-- ===========-====== NAVBAR ================= -->
-    <nav id="mainNavbar" class="navbar navbar-expand-lg navbar-dark fixed-top">
-        <div class="container">
-            <a class="navbar-brand fw-bold fs-4" href="{{ url('/') }}">
-                <i class="bi bi-building-fill me-1"></i> EL Kayan
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-lg-center">
-                    <li class="nav-item">
-                        <a class="nav-link fw-semibold {{ Request::is('/') ? 'active' : '' }}"
-                            href="{{ url('/') }}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link fw-semibold {{ Request::is('about-us') ? 'active' : '' }}"
-                            href="{{ route('about-us') }}">About Us</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link fw-semibold {{ Request::is('properties') ? 'active' : '' }}"
-                            href="{{ route('properties.index') }}">Properties</a>
-                    </li>
-                    @auth
-                        @if(in_array(auth()->user()->role, ['admin', 'seller']))
-                            <li class="nav-item"><a class="nav-link fw-semibold {{ Request::is('dashboard') ? 'active' : '' }}"
-                                    href="{{ route('dashboard') }}">Dashboard</a></li>
-                        @endif
-                    @endauth
-                    @auth
-                        {{-- Notification Bell --}}
-                        <li class="nav-item dropdown position-relative">
-                            <a class="nav-link notification-bell" href="#" role="button"
-                                data-bs-toggle="dropdown" aria-expanded="false" id="notificationBell">
-                                <i class="bi bi-bell-fill"></i>
-                                <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end notification-dropdown-menu" style="width: 350px;">
-                                <li class="notification-dropdown-header">
-                                    <h6>Notifications</h6>
-                                    <small class="text-muted" id="notificationCount">0 new</small>
-                                </li>
-                                <div id="notificationList" style="max-height: 300px; overflow-y: auto;">
-                                    <li class="text-center py-3 text-muted">
-                                        <i class="bi bi-bell-slash"></i>
-                                        <p class="mb-0 small">No new notifications</p>
-                                    </li>
-                                </div>
-                                <li class="notification-dropdown-footer">
-                                    <a href="{{ route('notifications.index') }}">View All Notifications</a>
-                                </li>
-                            </ul>
-                        </li>
-                        
-                        {{-- Profile Dropdown --}}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button"
-                                data-bs-toggle="dropdown">
-                                <img src="{{ Auth::user()->profile_image_url }}" alt="{{ Auth::user()->name }}"
-                                    class="rounded-circle profile-img me-2">
-                                <span>{{ Auth::user()->name }}</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item d-flex align-items-center" href="{{ route('profile') }}"><i
-                                            class="bi bi-person-circle me-2"></i>Profile</a></li>
-                                <li>
-                                    <form method="POST" action="{{ route('logout') }}">
-                                        @csrf
-                                        <button type="submit" class="dropdown-item d-flex align-items-center"><i
-                                                class="bi bi-box-arrow-right me-2"></i>Logout</button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </li>
-                    @else
-                        <li class="nav-item">
-                            <a class="btn btn-custom btn-sm fw-bold ms-2" href="{{ route('login.form') }}">
-                                <i class="bi bi-box-arrow-in-right me-1"></i> Login
-                            </a>
-                        </li>
-                    @endauth
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <!-- ================= NAVBAR ================= -->
+    @include('includes.navbar', ['showNotifications' => true, 'showSettings' => false, 'showDashboard' => true])
 
     <!-- ================= PAGE CONTENT ================= -->
     <div class="container-fluid mt-5 pt-4">
+        <!-- Page Header -->
+        <div class="page-header-section mb-4">
+            <div class="row align-items-center mb-3">
+                <div class="col-md-8">
+                    <h1 class="page-main-title">
+                        <i class="bi bi-building me-2"></i>Browse Properties
+                    </h1>
+                    <p class="page-subtitle-text">Discover your perfect property from our curated collection</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="properties-count-badge">
+                        <span class="count-number">{{ $properties->count() }}</span>
+                        <span class="count-text">Properties</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Status Counts -->
+            <div class="row g-3">
+                <div class="col-6 col-md-3">
+                    <div class="status-count-card status-available">
+                        <div class="status-icon">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <div class="status-info">
+                            <span class="status-number">{{ $statusCounts['available'] ?? 0 }}</span>
+                            <span class="status-label">Available</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="status-count-card status-sold">
+                        <div class="status-icon">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </div>
+                        <div class="status-info">
+                            <span class="status-number">{{ $statusCounts['sold'] ?? 0 }}</span>
+                            <span class="status-label">Sold</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="status-count-card status-pending">
+                        <div class="status-icon">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+                        <div class="status-info">
+                            <span class="status-number">{{ $statusCounts['pending'] ?? 0 }}</span>
+                            <span class="status-label">Pending</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="status-count-card status-reserved">
+                        <div class="status-icon">
+                            <i class="bi bi-bookmark-fill"></i>
+                        </div>
+                        <div class="status-info">
+                            <span class="status-number">{{ $statusCounts['reserved'] ?? 0 }}</span>
+                            <span class="status-label">Reserved</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Mobile Filter Toggle Button -->
         <div class="d-lg-none mb-3">
@@ -128,26 +110,45 @@
 
                         @endphp
                         <div class="col" data-id="{{ $property->id }}">
-                            <div class="card shadow-sm h-100">
-                                <img src="{{ $imagePath }}" class="card-img-top object-fit-cover"
-                                    alt="{{ $property->category ?? 'Property' }}">
-                                <div class="card-body d-flex flex-column">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <h5 class="card-title mb-0">{{ $property->category }}</h5>
-                                        <span class="badge bg-secondary">ID: {{ $property->id }}</span>
+                            <div class="property-card-modern shadow-sm h-100">
+                                <div class="property-image-container">
+                                    <img src="{{ $imagePath }}" class="property-main-image"
+                                        alt="{{ $property->category ?? 'Property' }}">
+                                    <div class="property-status-badge-always status-{{ strtolower($property->status) }}">
+                                        <i class="bi bi-{{ $property->status === 'available' ? 'check-circle' : ($property->status === 'sold' ? 'x-circle' : ($property->status === 'pending' ? 'hourglass-split' : 'bookmark')) }}"></i>
+                                        <span>{{ ucfirst($property->status) }}</span>
                                     </div>
-                                    <p class="card-text mb-1"><span class="text-info fw-bold">Status:</span>
-                                        {{ $property->status }}</p>
-                                    <p class="card-text mb-1"><span class="text-info fw-bold">Location:</span>
-                                        {{ $property->location }}</p>
-                                    <p class="card-text mb-1"><span class="text-info fw-bold">Type:</span>
-                                        {{ ucfirst($property->transaction_type ?? 'N/A') }}</p>
-                                    <p class="card-text mb-3"><span class="text-success fw-bold">Price:</span>
-                                        {{ number_format($property->price) }} EGP</p>
-                                    <div class="mt-auto">
+                                    <div class="property-type-overlay">
+                                        <i class="bi bi-{{ $property->transaction_type === 'rent' ? 'house-door' : 'house-fill' }}"></i>
+                                        <span>{{ ucfirst($property->transaction_type ?? 'Sale') }}</span>
+                                    </div>
+                                </div>
+                                <div class="property-card-content">
+                                    <div class="property-title-section">
+                                        <h5 class="property-name">{{ $property->category ?? 'Property' }}</h5>
+                                    </div>
+                                    
+                                    <div class="property-details-list">
+                                        <div class="detail-item">
+                                            <i class="bi bi-geo-alt-fill detail-icon"></i>
+                                            <span class="detail-text">{{ $property->location ?? 'Location not specified' }}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <i class="bi bi-tag-fill detail-icon"></i>
+                                            <span class="detail-text">{{ ucfirst($property->category ?? 'N/A') }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="property-price-section">
+                                        <span class="price-label-text">Price</span>
+                                        <span class="price-main-value">{{ number_format($property->price ?? 0) }} EGP</span>
+                                    </div>
+
+                                    <div class="property-action-section">
                                         <a href="{{ route('properties.show', ['property' => $property->id]) }}"
-                                            class="btn btn-primary w-100">
-                                            <i class="fas fa-info-circle me-1"></i> View Details
+                                            class="btn-view-property">
+                                            <span>View Details</span>
+                                            <i class="bi bi-arrow-right"></i>
                                         </a>
                                     </div>
                                 </div>
@@ -155,7 +156,16 @@
                         </div>
                     @empty
                         <div class="col-12">
-                            <p class="text-center text-muted fs-5">No properties found matching your criteria.</p>
+                            <div class="empty-state-modern">
+                                <div class="empty-icon-wrapper">
+                                    <i class="bi bi-search"></i>
+                                </div>
+                                <h3 class="empty-title">No Properties Found</h3>
+                                <p class="empty-message">We couldn't find any properties matching your criteria. Try adjusting your filters or check back later.</p>
+                                <a href="{{ route('properties.index') }}" class="btn btn-primary btn-reset-filters">
+                                    <i class="bi bi-arrow-counterclockwise me-2"></i>Reset Filters
+                                </a>
+                            </div>
                         </div>
                     @endforelse
                 </div>
@@ -259,6 +269,8 @@
         </div>
     </div>
 
+    <!-- Professional Footer -->
+    @include('includes.footer')
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
