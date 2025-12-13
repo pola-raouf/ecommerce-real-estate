@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ asset('css/navbar.css') }}">
     <link rel="stylesheet" href="{{ asset('css/profile.css') }}">
     <link rel="stylesheet" href="{{ asset('css/footer.css') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -23,63 +24,24 @@
 <body class="d-flex flex-column min-vh-100">
 
 <!-- ================= NAVBAR ================= -->
-<nav id="mainNavbar" class="navbar navbar-expand-lg navbar-dark fixed-top">
-    <div class="container">
-        <a class="navbar-brand fw-bold fs-4" href="{{ url('/') }}">
-            <i class="bi bi-building-fill me-1"></i> EL Kayan
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto align-items-lg-center">
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold {{ Request::is('/') ? 'active' : '' }}" href="{{ url('/') }}">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold {{ Request::is('about-us') ? 'active' : '' }}" href="{{ route('about-us') }}">About Us</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold {{ Request::is('properties') ? 'active' : '' }}" href="{{ route('properties.index') }}">Properties</a>
-                </li>
-                @auth
-                    @if(in_array(auth()->user()->role, ['admin', 'seller']))
-                    <li class="nav-item">
-                        <a class="nav-link fw-semibold {{ Request::is('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">Dashboard</a>
-                    </li>
-                    @endif
-
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
-                            <img src="{{ Auth::user()->profile_image_url }}" alt="{{ Auth::user()->name }}" class="rounded-circle profile-img me-2">
-                            <span>{{ Auth::user()->name }}</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item d-flex align-items-center" href="{{ route('profile') }}"><i class="bi bi-person-circle me-2"></i>Profile</a></li>
-                            <li>
-                                <form method="POST" action="{{ route('logout') }}">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item d-flex align-items-center"><i class="bi bi-box-arrow-right me-2"></i>Logout</button>
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
-                @else
-                    <li class="nav-item">
-                        <a class="btn btn-custom btn-sm fw-bold ms-2" href="{{ route('login.form') }}">
-                            <i class="bi bi-box-arrow-in-right me-1"></i> Login
-                        </a>
-                    </li>
-                @endauth
-            </ul>
-        </div>
-    </div>
-</nav>
+@include('includes.navbar', ['showNotifications' => false, 'showSettings' => false, 'showDashboard' => true])
 
 <!-- ================= MAIN CONTENT ================= -->
 <div class="container profile-page py-5" style="margin-top: 80px;">
     <div id="alert-container"></div>
+
+    <!-- Profile Header -->
+    <div class="profile-header mb-4">
+        <div class="header-content">
+            <div class="header-icon-wrapper">
+                <i class="bi bi-person-circle"></i>
+            </div>
+            <div>
+                <h1 class="profile-main-title">My Profile</h1>
+                <p class="profile-subtitle">Manage your personal information and settings</p>
+            </div>
+        </div>
+    </div>
 
     <div class="row g-4">
         <!-- Profile Picture - Order 1 on mobile, 2 on desktop -->
