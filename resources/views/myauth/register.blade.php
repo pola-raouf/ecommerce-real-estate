@@ -11,39 +11,12 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ asset('css/register.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/navbar.css') }}">
 </head>
 @php($today = now()->toDateString())
 <body class="auth-body">
 
-<!-- ================= NAVBAR ================= -->
-<nav id="mainNavbar" class="navbar navbar-expand-lg navbar-dark fixed-top">
-    <div class="container">
-        <a class="navbar-brand fw-bold fs-4 text-black" href="{{ url('/') }}">
-            <i class="bi bi-building-fill me-1"></i> EL Kayan
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto align-items-lg-center">
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold {{ Request::is('/') ? 'active' : '' }}" href="{{ url('/') }}">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold {{ Request::is('about-us') ? 'active' : '' }}" href="{{ route('about-us') }}">About Us</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold {{ Request::is('properties') ? 'active' : '' }}" href="{{ route('properties.index') }}">Properties</a>
-                </li>
-                <li class="nav-item">
-                    <a class="btn btn-custom btn-sm fw-bold ms-2" href="{{ route('login.form') }}">
-                        <i class="bi bi-box-arrow-in-right me-1"></i> Login
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
+    @include('includes.navbar')
 
 <!-- ================= REGISTER FORM ================= -->
 <section class="auth-wrapper">
