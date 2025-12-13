@@ -23,6 +23,8 @@
 }
 
 .hero-content {
+    position: relative;
+    top: 20px;
     text-align: center;
     position: relative;
     z-index: 1;
